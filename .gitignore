@@ -1,0 +1,72 @@
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+*.swp
+*.swo
+*~
+
+# Environment files and local secrets (keep documented examples)
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+!debug.keystore
+
+# Logs, temporary files, and test output
+*.log
+logs/
+tmp/
+temp/
+coverage/
+.nyc_output/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Node.js
+**/node_modules/
+**/.npm/
+**/.yarn/cache/
+**/.yarn/unplugged/
+**/.yarn/install-state.gz
+**/.pnp.*
+
+# Java / Maven
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# React Native / Metro
+frame-forward-app/.metro-health-check*
+frame-forward-app/*.jsbundle
+frame-forward-app/ios/build/
+frame-forward-app/ios/DerivedData/
+frame-forward-app/ios/Pods/
+frame-forward-app/ios/xcuserdata/
+frame-forward-app/ios/**/*.xcuserstate
+frame-forward-app/android/.gradle/
+frame-forward-app/android/build/
+frame-forward-app/android/app/build/
+frame-forward-app/android/.cxx/
+frame-forward-app/android/local.properties
+frame-forward-app/android/captures/
+
+# Local application data
+frame-forward-server/**/var/

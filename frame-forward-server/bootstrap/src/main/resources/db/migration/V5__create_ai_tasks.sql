@@ -1,0 +1,20 @@
+CREATE TABLE ai_tasks (
+  id VARCHAR(36) PRIMARY KEY,
+  account_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  operation_type VARCHAR(80) NOT NULL,
+  idempotency_key VARCHAR(128) NOT NULL,
+  state VARCHAR(16) NOT NULL,
+  workflow_version VARCHAR(80) NOT NULL,
+  model_id VARCHAR(160) NOT NULL,
+  prompt_version VARCHAR(80) NOT NULL,
+  rule_version VARCHAR(80) NOT NULL,
+  schema_version VARCHAR(80) NOT NULL,
+  input_json JSON NOT NULL,
+  result_json JSON NULL,
+  error_code VARCHAR(80) NULL,
+  created_at TIMESTAMP(6) NOT NULL,
+  updated_at TIMESTAMP(6) NOT NULL,
+  UNIQUE KEY uk_ai_task_idempotency (account_id, operation_type, idempotency_key),
+  CONSTRAINT chk_ai_task_state CHECK (state IN ('QUEUED','RUNNING','SUCCEEDED','FAILED','CANCELLED')),
+  CONSTRAINT fk_ai_task_account FOREIGN KEY (account_id) REFERENCES accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

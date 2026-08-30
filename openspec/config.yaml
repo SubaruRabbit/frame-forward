@@ -1,0 +1,38 @@
+schema: spec-driven
+
+context: |
+  Product: 下一张 FrameForward, an Android AI mirrorless-camera photography coach.
+  Approved requirements baseline: docs/product/prd/versions/frame-forward-prd-v1.0.0-approved.md.
+  Client: frame-forward-app, React Native with TypeScript, Android first.
+  Server: frame-forward-server, Java 21, Spring Boot 3.5.8, Spring AI Alibaba, modular monolith.
+  Contract: contracts, OpenAPI is the client/server source of truth.
+  AI: deterministic Graph/Workflow with configurable Qwen model routing.
+  Current phase: local development for the product owner; deployment, commercialization, password recovery, SMS verification, camera direct connection, and course CMS are out of scope.
+
+rules:
+  proposal:
+    - Cover exactly one primary capability and keep the proposal under 350 Chinese characters or 250 English words.
+    - Include explicit Dependencies and Non-goals sections.
+    - Split the change if it requires more than two server modules or more than two app features.
+  specs:
+    - Define no more than five requirements in one change.
+    - Every requirement must include at least one testable scenario.
+    - Do not restate unrelated PRD requirements.
+  design:
+    - Keep design decisions local to this change and list affected projects and modules.
+    - Avoid deployment design and speculative extension points not required by the change.
+  tasks:
+    - Use 3 to 7 implementation tasks per change.
+    - Each task must have one verifiable outcome and should be completable in at most two focused hours.
+    - Avoid combining app, server, contract, data migration, and testing work in one task.
+    - Name the project or module affected by every task.
+
+operations:
+  apply:
+    guidance:
+      - Apply one change at a time in dependency order.
+      - Stop and split the change if implementation reveals more than seven tasks or a second primary capability.
+      - Verify each task before marking it complete.
+  archive:
+    guidance:
+      - Archive only after every task and scenario passes.
