@@ -1,0 +1,13 @@
+package com.frameforward.shooting;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.frameforward.ai.AiTaskRuntime;
+import com.frameforward.auth.AuthService;
+import java.time.Instant; import java.util.*;
+import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional;
+@Service public class ShootingPlanService { private final AuthService auth; private final SceneAnalysisMapper scenes; private final ShootingPlanMapper plans; private final AiTaskRuntime tasks; private final ObjectMapper json;
+  public ShootingPlanService(AuthService auth,SceneAnalysisMapper scenes,ShootingPlanMapper plans,AiTaskRuntime tasks,ObjectMapper json){this.auth=auth;this.scenes=scenes;this.plans=plans;this.tasks=tasks;this.json=json;}
+  @Transactional public AiTaskRuntime.Created create(String token,String key,Request request){if(request==null||request.sceneAnalysisId==null||request.sceneAnalysisId.isBlank())throw new InvalidRequest();String account=auth.requireAccountId(token);var scene=scenes.selectOne(new LambdaQueryWrapper<SceneAnalysisEntity>().eq(SceneAnalysisEntity::getId,request.sceneAnalysisId).eq(SceneAnalysisEntity::getAccountId,account));if(scene==null)throw new SceneNotFound();var input=new LinkedHashMap<String,Object>();input.put("scene",Map.of("id",scene.id,"subject",scene.subjectText,"style",scene.targetStyle));input.put("equipmentSnapshot",read(scene.equipmentSnapshotJson));if(request.mockOutput!=null)input.put("mockOutput",request.mockOutput);var taskRequest=new AiTaskRuntime.CreateRequest();taskRequest.operationType="shooting-plan-generation";taskRequest.input=input;var task=tasks.create(token,key,taskRequest);if(plans.selectOne(new LambdaQueryWrapper<ShootingPlanEntity>().eq(ShootingPlanEntity::getAiTaskId,task.taskId()))==null){var entity=new ShootingPlanEntity();entity.id=UUID.randomUUID().toString();entity.accountId=account;entity.sceneAnalysisId=scene.id;entity.aiTaskId=task.taskId();entity.sceneSnapshotJson=write(input.get("scene"));entity.equipmentSnapshotJson=scene.equipmentSnapshotJson;entity.createdAt=Instant.now();plans.insert(entity);}return task;}
+  private Object read(String value){try{return json.readValue(value,Object.class);}catch(Exception e){throw new IllegalStateException(e);}} private String write(Object value){try{return json.writeValueAsString(value);}catch(Exception e){throw new IllegalStateException(e);}}
+  public static class Request{public String sceneAnalysisId;public Map<String,Object> mockOutput;} public static class InvalidRequest extends RuntimeException{} public static class SceneNotFound extends RuntimeException{}
+}

@@ -13,6 +13,8 @@ frame-forward:
     qwen-routes:
       course: ${FRAME_FORWARD_QWEN_COURSE_MODEL:qwen3.7-plus}
       coach: ${FRAME_FORWARD_QWEN_COACH_MODEL:qwen-plus}
+      scene: ${FRAME_FORWARD_QWEN_SCENE_MODEL:qwen3.8-max}
+      image: ${FRAME_FORWARD_QWEN_IMAGE_MODEL:qwen-image-3.0-pro}
       default: ${FRAME_FORWARD_QWEN_DEFAULT_MODEL:qwen-plus}
   media:
     storage-root: ${FRAME_FORWARD_MEDIA_ROOT:./var/media}

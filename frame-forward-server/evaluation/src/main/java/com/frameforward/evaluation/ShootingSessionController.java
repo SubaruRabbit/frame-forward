@@ -1,0 +1,3 @@
+package com.frameforward.evaluation;
+import com.frameforward.auth.AuthController; import org.springframework.http.*; import org.springframework.web.bind.annotation.*;
+@RestController @RequestMapping("/shooting-sessions") public class ShootingSessionController {private final ShootingSessionService sessions; public ShootingSessionController(ShootingSessionService sessions){this.sessions=sessions;} @PostMapping ResponseEntity<ShootingSessionEntity> create(@RequestHeader(name="Authorization",required=false) String authorization,@RequestBody ShootingSessionService.Request request){return ResponseEntity.status(HttpStatus.CREATED).body(sessions.create(AuthController.bearer(authorization),request));}}

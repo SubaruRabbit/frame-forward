@@ -100,6 +100,40 @@ paths:
           $ref: '#/components/responses/InvalidRequest'
         '401':
           description: No valid session or current password is incorrect.
+  /auth/account-deletions:
+    post:
+      operationId: startAccountDeletion
+      summary: Verify the current password, revoke all sessions, and start irreversible account cleanup.
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AccountDeletionRequest'}
+      responses:
+        '202':
+          description: Account cleanup job accepted. Keep deletionToken only to query or retry this job while it remains valid.
+          content: {application/json: {schema: {$ref: '#/components/schemas/AccountDeletionJob'}}}
+        '401': {description: No valid session or current password is incorrect.}
+  /auth/account-deletions/{jobId}:
+    get:
+      operationId: getAccountDeletion
+      summary: Get a deletion job using its short-lived job credential after ordinary sessions are revoked.
+      parameters:
+        - {in: path, name: jobId, required: true, schema: {type: string, format: uuid}}
+        - {in: header, name: X-Account-Deletion-Token, required: true, schema: {type: string, minLength: 1}}
+      responses:
+        '200': {description: Current cleanup state, content: {application/json: {schema: {$ref: '#/components/schemas/AccountDeletionJob'}}}}
+        '401': {description: Deletion job credential is invalid or expired.}
+    post:
+      operationId: retryAccountDeletion
+      summary: Retry a failed account cleanup job using its short-lived job credential.
+      parameters:
+        - {in: path, name: jobId, required: true, schema: {type: string, format: uuid}}
+        - {in: header, name: X-Account-Deletion-Token, required: true, schema: {type: string, minLength: 1}}
+      responses:
+        '202': {description: Cleanup retry accepted, content: {application/json: {schema: {$ref: '#/components/schemas/AccountDeletionJob'}}}}
+        '401': {description: Deletion job credential is invalid or expired.}
   /health:
     get:
       operationId: getHealth
@@ -153,6 +187,125 @@ paths:
       responses:
         '200': {description: Server sent events, content: {text/event-stream: {schema: {$ref: '#/components/schemas/AiTaskEvent'}}}}
         '401': {description: Authentication is required}
+  /scene-analyses:
+    post:
+      operationId: createSceneAnalysis
+      summary: Analyze one owned environment JPEG into structured scene facts.
+      security: [{bearerAuth: []}]
+      parameters: [{in: header, name: Idempotency-Key, required: true, schema: {type: string, minLength: 1, maxLength: 128}}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/SceneAnalysisRequest'}}}
+      responses:
+        '202': {description: Analysis task accepted, content: {application/json: {schema: {$ref: '#/components/schemas/AiTaskCreated'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {description: Authentication is required}
+        '404': {description: Environment media or selected equipment is not owned by the requester.}
+  /shooting-plans:
+    post:
+      operationId: createShootingPlans
+      summary: Generate two or three ranked, equipment-constrained shooting plans from an owned scene analysis.
+      security: [{bearerAuth: []}]
+      parameters: [{in: header, name: Idempotency-Key, required: true, schema: {type: string, minLength: 1, maxLength: 128}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ShootingPlanRequest'}}}}
+      responses: {'202': {description: Plan task accepted, content: {application/json: {schema: {$ref: '#/components/schemas/AiTaskCreated'}}}}, '404': {description: Scene analysis not owned by requester.}}
+  /reference-images:
+    post:
+      operationId: createReferenceImage
+      summary: Generate an owned visual reference from an environment JPEG and selected shooting plan.
+      security: [{bearerAuth: []}]
+      parameters: [{in: header, name: Idempotency-Key, required: true, schema: {type: string, minLength: 1, maxLength: 128}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReferenceImageRequest'}}}}
+      responses: {'202': {description: Reference image task accepted, content: {application/json: {schema: {$ref: '#/components/schemas/AiTaskCreated'}}}}, '404': {description: Environment media or shooting plan is not owned by requester.}}
+  /photo-evaluations:
+    post:
+      operationId: createPhotoEvaluation
+      summary: Score an owned JPEG and return ordered visual and technical feedback.
+      security: [{bearerAuth: []}]
+      parameters: [{in: header, name: Idempotency-Key, required: true, schema: {type: string, minLength: 1, maxLength: 128}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PhotoEvaluationRequest'}}}}
+      responses: {'202': {description: Evaluation task accepted or reused, content: {application/json: {schema: {$ref: '#/components/schemas/AiTaskCreated'}}}}, '404': {description: Owned JPEG not found.}}
+  /retake-comparisons:
+    post:
+      operationId: createRetakeComparison
+      summary: Link two owned evaluated works from one shooting session and return their structured comparison.
+      security: [{bearerAuth: []}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RetakeComparisonRequest'}}}}
+      responses:
+        '201': {description: Retake relationship created, content: {application/json: {schema: {$ref: '#/components/schemas/RetakeComparison'}}}}
+        '400': {description: Works are not from the same shooting session or have incomplete evaluations.}
+        '404': {description: An evaluated work is not owned by the requester.}
+  /shooting-sessions:
+    post:
+      operationId: createShootingSession
+      summary: Create an owned shooting session bound to a selected shooting plan.
+      security: [{bearerAuth: []}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ShootingSessionRequest'}}}}
+      responses:
+        '201': {description: Shooting session created, content: {application/json: {schema: {$ref: '#/components/schemas/ShootingSession'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '404': {description: Shooting plan is not owned by the requester.}
+  /retake-comparisons/{retakeEvaluationId}:
+    get:
+      operationId: getRetakeComparison
+      summary: Get an owned retake comparison by its retake evaluation.
+      security: [{bearerAuth: []}]
+      parameters: [{in: path, name: retakeEvaluationId, required: true, schema: {type: string, format: uuid}}]
+      responses:
+        '200': {description: Structured retake comparison, content: {application/json: {schema: {$ref: '#/components/schemas/RetakeComparison'}}}}
+        '404': {description: Retake relationship not found or not owned by the requester.}
+  /portfolio/works:
+    get:
+      operationId: listPortfolioWorks
+      summary: List the authenticated user's private works with optional subject, camera, lens, and favorite filters.
+      security: [{bearerAuth: []}]
+      parameters:
+        - {in: query, name: cursor, schema: {type: string, maxLength: 128}}
+        - {in: query, name: limit, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+        - {in: query, name: subject, schema: {type: string, maxLength: 128}}
+        - {in: query, name: camera, schema: {type: string, maxLength: 128}}
+        - {in: query, name: lens, schema: {type: string, maxLength: 128}}
+        - {in: query, name: favorite, schema: {type: boolean}}
+      responses:
+        '200': {description: Page of owned works., content: {application/json: {schema: {$ref: '#/components/schemas/PortfolioWorkPage'}}}}
+        '401': {description: Authentication required.}
+  /portfolio/works/{mediaId}:
+    get:
+      operationId: getPortfolioWork
+      summary: Get one owned work and the availability of its optional detail sections.
+      security: [{bearerAuth: []}]
+      parameters: [{in: path, name: mediaId, required: true, schema: {type: string, format: uuid}}]
+      responses:
+        '200': {description: Owned work detail., content: {application/json: {schema: {$ref: '#/components/schemas/PortfolioWorkDetail'}}}}
+        '404': {description: Work not found or not owned by the requester.}
+    put:
+      operationId: setPortfolioWorkFavorite
+      summary: Set favorite state for one owned work.
+      security: [{bearerAuth: []}]
+      parameters: [{in: path, name: mediaId, required: true, schema: {type: string, format: uuid}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PortfolioFavoriteRequest'}}}}
+      responses:
+        '200': {description: Favorite state saved., content: {application/json: {schema: {$ref: '#/components/schemas/PortfolioFavorite'}}}}
+        '404': {description: Work not found or not owned by the requester.}
+    delete:
+      operationId: deletePortfolioWork
+      summary: Start idempotent cleanup of one owned work and all of its private derived data.
+      security: [{bearerAuth: []}]
+      parameters: [{in: path, name: mediaId, required: true, schema: {type: string, format: uuid}}]
+      responses:
+        '202': {description: Deletion job accepted or reused., content: {application/json: {schema: {$ref: '#/components/schemas/PortfolioWorkDeletionJob'}}}}
+        '401': {description: Authentication required.}
+        '404': {description: Work not found or not owned by the requester.}
+  /portfolio/work-deletions/{jobId}:
+    get:
+      operationId: getPortfolioWorkDeletion
+      summary: Get the current cleanup status for one owned work deletion job.
+      security: [{bearerAuth: []}]
+      parameters: [{in: path, name: jobId, required: true, schema: {type: string, format: uuid}}]
+      responses:
+        '200': {description: Current deletion job status., content: {application/json: {schema: {$ref: '#/components/schemas/PortfolioWorkDeletionJob'}}}}
+        '401': {description: Authentication required.}
+        '404': {description: Deletion job not found or not owned by the requester.}
   /media/jpeg:
     post:
       operationId: uploadJpeg
@@ -417,6 +570,22 @@ components:
           format: password
           minLength: 8
           maxLength: 64
+    AccountDeletionRequest:
+      type: object
+      additionalProperties: false
+      required: [currentPassword]
+      properties:
+        currentPassword: {type: string, format: password, minLength: 1, maxLength: 64}
+    AccountDeletionJob:
+      type: object
+      additionalProperties: false
+      required: [jobId, state, deletionTokenExpiresAt]
+      properties:
+        jobId: {type: string, format: uuid}
+        state: {type: string, enum: [PENDING, IN_PROGRESS, COMPLETED, FAILED]}
+        failureReason: {type: [string, 'null'], maxLength: 500}
+        deletionToken: {type: [string, 'null'], description: Returned only once when the authenticated request creates the job. It permits status and retry only for this job.}
+        deletionTokenExpiresAt: {type: string, format: date-time}
     SessionResponse:
       type: object
       additionalProperties: false
@@ -478,6 +647,197 @@ components:
       properties:
         taskId: {type: string}
         state: {$ref: '#/components/schemas/AiTaskState'}
+    SceneAnalysisRequest:
+      type: object
+      additionalProperties: false
+      required: [environmentMediaId, subjectType, subject, targetStyle, timeConstraintMinutes, equipmentIds]
+      properties:
+        environmentMediaId: {type: string, format: uuid}
+        subjectType: {type: string, minLength: 1, maxLength: 64}
+        subject: {type: string, minLength: 1, maxLength: 255}
+        targetStyle: {type: string, minLength: 1, maxLength: 255}
+        timeConstraintMinutes: {type: integer, minimum: 1, maximum: 1440}
+        equipmentIds: {type: array, items: {type: string, format: uuid}, uniqueItems: true}
+    SceneAnalysisResult:
+      type: object
+      additionalProperties: false
+      required: [sceneType, subjectCandidates, light, backgroundComplexity, compositionalStructures, usablePositions, accessoryOpportunities, safetyWarnings]
+      properties:
+        sceneType: {type: string}
+        subjectCandidates: {type: array, items: {type: string}}
+        light: {type: object, additionalProperties: true}
+        backgroundComplexity: {type: string}
+        compositionalStructures: {type: array, items: {type: string}}
+        usablePositions: {type: array, items: {type: object, additionalProperties: true}}
+        accessoryOpportunities: {type: array, items: {type: string}}
+        safetyWarnings: {type: array, items: {type: string}}
+    ShootingPlanRequest:
+      type: object
+      additionalProperties: false
+      required: [sceneAnalysisId]
+      properties: {sceneAnalysisId: {type: string, format: uuid}}
+    ShootingPlanResult:
+      type: object
+      required: [plans]
+      properties: {plans: {type: array, minItems: 2, maxItems: 3, items: {$ref: '#/components/schemas/ShootingPlan'}}}
+    ShootingPlan:
+      type: object
+      required: [label, recommended, position, distance, cameraHeight, orientation, focalLengthMm, exposure, metering, focus, driveMode, whiteBalance, composition, pose, accessoryUse, steps]
+      properties:
+        label: {type: string, enum: [SAFE, ATMOSPHERIC, CREATIVE]}
+        recommended: {type: boolean}
+        position: {type: string}
+        distance: {type: string}
+        cameraHeight: {type: string}
+        orientation: {type: string}
+        focalLengthMm: {type: integer, minimum: 1}
+        exposure: {type: object, required: [aperture, shutterSpeed, iso, startingPoint], properties: {aperture: {type: string}, shutterSpeed: {type: string}, iso: {type: integer}, startingPoint: {type: boolean, const: true}}}
+        metering: {type: string}
+        focus: {type: string}
+        driveMode: {type: string}
+        whiteBalance: {type: string}
+        composition: {type: string}
+        pose: {type: string}
+        accessoryUse: {type: string}
+        steps: {type: array, minItems: 1, items: {type: string}}
+    ReferenceImageRequest:
+      type: object
+      additionalProperties: false
+      required: [environmentMediaId, shootingPlanId, selectedPlan]
+      properties:
+        environmentMediaId: {type: string, format: uuid}
+        shootingPlanId: {type: string, format: uuid}
+        selectedPlan: {$ref: '#/components/schemas/ShootingPlan'}
+    ReferenceImageResult:
+      type: object
+      required: [referenceImageId, mediaId, imageUrl, width, height]
+      properties:
+        referenceImageId: {type: string, format: uuid}
+        mediaId: {type: string, format: uuid}
+        imageUrl: {type: string}
+        width: {type: integer, minimum: 1}
+        height: {type: integer, minimum: 1}
+    PhotoEvaluationRequest:
+      type: object
+      additionalProperties: false
+      required: [mediaId]
+      properties: {mediaId: {type: string, format: uuid}, sessionId: {type: string, format: uuid}, intent: {type: string, maxLength: 500}, reanalyze: {type: boolean}}
+    ShootingSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [shootingPlanId, planContext]
+      properties:
+        shootingPlanId: {type: string, format: uuid}
+        planContext: {type: string, minLength: 1, maxLength: 1000}
+    ShootingSession:
+      type: object
+      additionalProperties: false
+      required: [id, shootingPlanId, planContext]
+      properties:
+        id: {type: string, format: uuid}
+        shootingPlanId: {type: string, format: uuid}
+        planContext: {type: string}
+    PhotoEvaluationResult:
+      type: object
+      required: [total, dimensions, strengths, primaryProblems, priorityImprovement, technicalDiagnosis, retakeSteps]
+      properties:
+        total: {type: integer, minimum: 1, maximum: 100}
+        dimensions: {type: object, additionalProperties: {type: integer, minimum: 1, maximum: 100}}
+        strengths: {type: array, items: {type: string}}
+        primaryProblems: {type: array, items: {type: string}}
+        priorityImprovement: {type: string}
+        technicalDiagnosis: {type: object, required: [certainty, text], properties: {certainty: {type: string, enum: [OBSERVATION, INFERENCE]}, text: {type: string}}}
+        exifLimit: {type: string}
+        retakeSteps: {type: array, items: {type: string}}
+    RetakeComparisonRequest:
+      type: object
+      additionalProperties: false
+      required: [originalEvaluationId, retakeEvaluationId]
+      properties:
+        originalEvaluationId: {type: string, format: uuid}
+        retakeEvaluationId: {type: string, format: uuid}
+    RetakeComparison:
+      type: object
+      additionalProperties: false
+      required: [original, retake, scoreDelta, dimensionChanges, compositionChanges, parameterChanges, improvedProblems, remainingProblems, nextPracticeAdvice]
+      properties:
+        original: {$ref: '#/components/schemas/RetakeWorkSnapshot'}
+        retake: {$ref: '#/components/schemas/RetakeWorkSnapshot'}
+        scoreDelta: {type: integer}
+        dimensionChanges: {type: object, additionalProperties: {type: integer}}
+        compositionChanges: {type: array, items: {type: string}}
+        parameterChanges: {type: object, additionalProperties: {type: object, required: [before, after], properties: {before: {type: string}, after: {type: string}}}}
+        improvedProblems: {type: array, items: {type: string}}
+        remainingProblems: {type: array, items: {type: string}}
+        nextPracticeAdvice: {type: string}
+    RetakeWorkSnapshot:
+      type: object
+      additionalProperties: false
+      required: [mediaId, score]
+      properties:
+        mediaId: {type: string, format: uuid}
+        score: {type: integer, minimum: 1, maximum: 100}
+    PortfolioWorkPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/PortfolioWork'}}
+        nextCursor: {type: [string, 'null']}
+    PortfolioWork:
+      type: object
+      additionalProperties: false
+      required: [mediaId, width, height, favorite, availability]
+      properties:
+        mediaId: {type: string, format: uuid}
+        width: {type: integer, minimum: 1}
+        height: {type: integer, minimum: 1}
+        subject: {type: [string, 'null']}
+        camera: {type: [string, 'null']}
+        lens: {type: [string, 'null']}
+        favorite: {type: boolean}
+        availability: {$ref: '#/components/schemas/PortfolioAvailability'}
+    PortfolioWorkDetail:
+      allOf:
+        - {$ref: '#/components/schemas/PortfolioWork'}
+        - type: object
+          additionalProperties: false
+          properties:
+            exif: {type: [object, 'null'], additionalProperties: {type: string}}
+            evaluation: {type: [object, 'null'], additionalProperties: true}
+            sourcePlan: {type: [object, 'null'], additionalProperties: true}
+            retake: {type: [object, 'null'], additionalProperties: true}
+    PortfolioAvailability:
+      type: object
+      additionalProperties: false
+      required: [exif, evaluation, sourcePlan, retake]
+      properties:
+        exif: {type: boolean}
+        evaluation: {type: boolean}
+        sourcePlan: {type: boolean}
+        retake: {type: boolean}
+    PortfolioFavoriteRequest:
+      type: object
+      additionalProperties: false
+      required: [favorite]
+      properties:
+        favorite: {type: boolean}
+    PortfolioFavorite:
+      type: object
+      additionalProperties: false
+      required: [mediaId, favorite]
+      properties:
+        mediaId: {type: string, format: uuid}
+        favorite: {type: boolean}
+    PortfolioWorkDeletionJob:
+      type: object
+      additionalProperties: false
+      required: [jobId, mediaId, state]
+      properties:
+        jobId: {type: string, format: uuid}
+        mediaId: {type: string, format: uuid}
+        state: {type: string, enum: [PENDING, IN_PROGRESS, COMPLETED, FAILED]}
+        failureReason: {type: [string, 'null'], maxLength: 500}
     MediaResponse:
       type: object
       additionalProperties: false

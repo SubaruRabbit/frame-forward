@@ -11,6 +11,17 @@ An authenticated user SHALL link an owned evaluated work as a retake of another 
 - **WHEN** either work does not belong to the current user
 - **THEN** the relationship is rejected
 
+#### Scenario: Cross-session link attempt
+- **WHEN** the two owned evaluated works belong to different shooting sessions
+- **THEN** the relationship is rejected
+
+### Requirement: Session-scoped evaluation
+An authenticated user SHALL create a shooting session from an owned selected shooting plan and SHALL associate each evaluated work used for retake comparison with that session.
+
+#### Scenario: Evaluation is attached to an owned session
+- **WHEN** the user evaluates an owned work for a shooting session created from the user's plan
+- **THEN** the evaluation retains the session identifier and the session plan context
+
 ### Requirement: Structured comparison
 The comparison SHALL show both images and scores, dimension changes, composition changes, parameter changes, improved problems, remaining problems and next practice advice.
 

@@ -1,6 +1,7 @@
 package com.frameforward.media;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.frameforward.auth.AccountDataCleanup;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifIFD0Directory;
@@ -18,10 +19,11 @@ import java.util.*;
 import javax.imageio.ImageIO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Primary;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-@Service public class MediaService {
+@Service @Primary public class MediaService implements WorkMediaCleanup, AccountDataCleanup {
   static final long MAX_BYTES = 50L * 1024 * 1024;
   private final MediaMapper media; private final Path root; private final ObjectMapper json = new ObjectMapper();
   public MediaService(MediaMapper media, @Value("${frame-forward.media.storage-root:./var/media}") String root) { this.media=media; this.root=Paths.get(root).toAbsolutePath().normalize(); }
@@ -47,12 +49,20 @@ import org.springframework.web.multipart.MultipartFile;
     } finally { if (temporary != null) try { Files.deleteIfExists(temporary); } catch (IOException ignored) {} }
   }
   public MediaResponse get(String ownerId, String id) { var item = media.selectOne(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getId,id).eq(MediaEntity::getOwnerId,ownerId)); if(item==null) throw new NotFoundException(); return response(item); }
+  @Transactional public MediaResponse registerGenerated(String ownerId, String imageUrl, int width, int height) {
+    String id=UUID.randomUUID().toString(); String hash=UUID.nameUUIDFromBytes(imageUrl.getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString().replace("-", "");
+    MediaEntity generated=new MediaEntity(id,ownerId,hash,width,height,imageUrl,imageUrl,"{}"); media.insert(generated); return response(generated);
+  }
   public UploadProgress progress(String ownerId,String id){ get(ownerId,id); return new UploadProgress(id,"COMPLETED",100); }
+  @Override public void deleteForWork(String ownerId,String id) { var item=media.selectOne(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getId,id).eq(MediaEntity::getOwnerId,ownerId)); if(item==null)return; try { deleteStoredFile(item.originalPath); deleteStoredFile(item.aiCopyPath); media.deleteById(item.id); } catch(IOException exception) { throw new CleanupFailedException(exception); } }
+  @Override public void deleteForAccount(String accountId) { media.selectList(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getOwnerId, accountId)).forEach(item -> deleteForWork(accountId, item.id)); }
+  private void deleteStoredFile(String value) throws IOException { if(value==null||value.isBlank()||value.contains("://"))return; Path file=Paths.get(value).toAbsolutePath().normalize(); if(file.startsWith(root))Files.deleteIfExists(file); }
   private MediaResponse response(MediaEntity e) { return new MediaResponse(e.id,e.width,e.height,e.contentHash,"COMPLETED", e.exifJson); }
   private static void copyBounded(InputStream in, Path target) throws IOException { long total=0; byte[] buffer=new byte[8192]; try(OutputStream out=Files.newOutputStream(target)){ int n; while((n=in.read(buffer))!=-1){ total+=n;if(total>MAX_BYTES)throw new TooLargeException();out.write(buffer,0,n); } } }
   private static String sha256(Path file) throws Exception { MessageDigest d=MessageDigest.getInstance("SHA-256");try(InputStream in=Files.newInputStream(file)){in.transferTo(new DigestOutputStream(OutputStream.nullOutputStream(),d));}return HexFormat.of().formatHex(d.digest()); }
   private String allowedExif(Metadata m) { Map<String,String> out=new LinkedHashMap<>(); ExifSubIFDDirectory exif=m.getFirstDirectoryOfType(ExifSubIFDDirectory.class); if(exif!=null) { copy(exif,out,ExifSubIFDDirectory.TAG_EXPOSURE_TIME,"exposureTime");copy(exif,out,ExifSubIFDDirectory.TAG_FNUMBER,"fNumber");copy(exif,out,ExifSubIFDDirectory.TAG_ISO_EQUIVALENT,"iso");copy(exif,out,ExifSubIFDDirectory.TAG_FOCAL_LENGTH,"focalLength");copy(exif,out,ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL,"capturedAt"); } try{return json.writeValueAsString(out);}catch(JsonProcessingException e){throw new IllegalStateException(e);} }
   private static void copy(ExifSubIFDDirectory d,Map<String,String> out,int tag,String name){if(d.containsTag(tag))out.put(name,d.getDescription(tag));}
+  public static class CleanupFailedException extends RuntimeException { public CleanupFailedException(Throwable cause){super("媒体文件清理失败",cause);} }
   private static int orientation(Metadata m){ExifIFD0Directory d=m.getFirstDirectoryOfType(ExifIFD0Directory.class);return d==null?1:d.getInteger(ExifIFD0Directory.TAG_ORIENTATION)==null?1:d.getInteger(ExifIFD0Directory.TAG_ORIENTATION);}
   private static BufferedImage orient(BufferedImage src,int o){ if(o==1)return src; int w=src.getWidth(),h=src.getHeight(); boolean swap=o>=5&&o<=8; BufferedImage dst=new BufferedImage(swap?h:w,swap?w:h,BufferedImage.TYPE_INT_RGB); Graphics2D g=dst.createGraphics(); AffineTransform t=new AffineTransform(); switch(o){case 3:t.translate(w,h);t.rotate(Math.PI);break;case 6:t.translate(h,0);t.rotate(Math.PI/2);break;case 8:t.translate(0,w);t.rotate(-Math.PI/2);break;default:return src;}g.drawImage(src,t,null);g.dispose();return dst; }
   public record MediaResponse(String id,int width,int height,String contentHash,String status,String exif){} public record UploadProgress(String uploadId,String status,int progress){}
