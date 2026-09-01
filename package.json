@@ -1,0 +1,7 @@
+{
+  "name": "frame-forward-workspace",
+  "private": true,
+  "scripts": {
+    "android": "npm --prefix ./frame-forward-app run android"
+  }
+}

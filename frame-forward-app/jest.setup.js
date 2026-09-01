@@ -9,8 +9,9 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({bottom: 0, left: 0, right: 0, top: 0}),
 }));
 
-jest.mock('react-native-document-picker', () => ({
+jest.mock('@react-native-documents/picker', () => ({
+  errorCodes: {OPERATION_CANCELED: 'OPERATION_CANCELED'},
+  isErrorWithCode: jest.fn(() => false),
+  pick: jest.fn(),
   types: {images: 'image/*'},
-  pickSingle: jest.fn(),
-  isCancel: jest.fn(() => false),
-}));
+}), {virtual: true});
