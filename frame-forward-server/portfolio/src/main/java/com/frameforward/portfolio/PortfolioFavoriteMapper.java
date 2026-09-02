@@ -1,7 +1,9 @@
 package com.frameforward.portfolio;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
 @Mapper
-interface PortfolioFavoriteMapper extends BaseMapper<PortfolioFavoriteEntity> {}
+interface PortfolioFavoriteMapper extends BaseMapper<PortfolioFavoriteEntity> {
+}

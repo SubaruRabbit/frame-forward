@@ -1,9 +1,83 @@
 package com.frameforward.bootstrap;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import com.fasterxml.jackson.databind.ObjectMapper; import java.util.*; import org.junit.jupiter.api.Test; import org.springframework.beans.factory.annotation.*; import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc; import org.springframework.boot.test.context.SpringBootTest; import org.springframework.http.MediaType; import org.springframework.jdbc.core.JdbcTemplate; import org.springframework.test.web.servlet.MockMvc;
-@SpringBootTest @AutoConfigureMockMvc class PhotoEvaluationIntegrationTests { @Autowired MockMvc mvc; @Autowired ObjectMapper json; @Autowired JdbcTemplate jdbc;
- @Test void reusesEvaluationAndReturnsVisualFeedbackWhenExifIsMissing() throws Exception {String token=register();String media=media(token);Map<String,Object> body=Map.of("mediaId",media,"mockOutput",output());var first=mvc.perform(post("/photo-evaluations").header("Authorization",token).header("Idempotency-Key","evaluation-1").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body))).andExpect(status().isAccepted()).andReturn();String task=json.readTree(first.getResponse().getContentAsString()).get("taskId").asText();for(int i=0;i<40;i++){var response=mvc.perform(get("/ai/tasks/{id}",task).header("Authorization",token)).andReturn();if("SUCCEEDED".equals(json.readTree(response.getResponse().getContentAsString()).get("state").asText()))break;Thread.sleep(25);}mvc.perform(get("/photo-evaluations/{id}",task).header("Authorization",token)).andExpect(jsonPath("$.trace.modelId").value("qwen3.8-max")).andExpect(jsonPath("$.result.total").value(75)).andExpect(jsonPath("$.result.exifLimit").exists()).andExpect(jsonPath("$.result.technicalDiagnosis.certainty").value("INFERENCE"));org.junit.jupiter.api.Assertions.assertEquals(1,jdbc.queryForObject("SELECT COUNT(*) FROM photo_evaluations WHERE ai_task_id = ? AND result_json IS NOT NULL",Integer.class,task));var reused=mvc.perform(post("/photo-evaluations").header("Authorization",token).header("Idempotency-Key","evaluation-2").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body))).andExpect(status().isAccepted()).andReturn();org.junit.jupiter.api.Assertions.assertEquals(task,json.readTree(reused.getResponse().getContentAsString()).get("taskId").asText());}
- private Map<String,Object> output(){return Map.of("dimensions",Map.of("composition",80,"light",70),"strengths",List.of("构图清晰"),"primaryProblems",List.of("背景略杂"),"priorityImprovement","先整理背景","technicalDiagnosis",Map.of("certainty","INFERENCE","text","可能是主体运动或手持抖动，建议分别检查。"),"retakeSteps",List.of("固定机位","提高快门"));}
- private String register() throws Exception {String name="evaluation"+UUID.randomUUID().toString().replace("-","").substring(0,10);var response=mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("username",name,"email",name+"@example.com","password","ValidPass1!")))).andReturn();return "Bearer "+json.readTree(response.getResponse().getContentAsString()).get("accessToken").asText();}
- private String media(String token) throws Exception {String account=json.readTree(mvc.perform(get("/test/protected").header("Authorization",token)).andReturn().getResponse().getContentAsString()).get("accountId").asText();String id=UUID.randomUUID().toString();jdbc.update("INSERT INTO media (id,owner_id,content_hash,width,height,original_path,ai_copy_path,exif_json) VALUES (?,?,?,?,?,?,?,JSON_OBJECT())",id,account,UUID.randomUUID().toString().replace("-","")+UUID.randomUUID().toString().replace("-",""),1200,800,"/tmp/o.jpg","/tmp/a.jpg");return id;}}
+
+import java.util.*;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+@SpringBootTest
+@AutoConfigureMockMvc
+class PhotoEvaluationIntegrationTests {
+    @Autowired
+    MockMvc mvc;
+    @Autowired
+    ObjectMapper json;
+    @Autowired
+    JdbcTemplate jdbc;
+    @Test
+    void reusesEvaluationAndReturnsVisualFeedbackWhenExifIsMissing() throws Exception {
+        String token = register();
+        String media = media(token);
+        Map<String, Object> body = Map.of("mediaId", media, "mockOutput", output());
+        var first = mvc.perform(
+                post("/photo-evaluations").header("Authorization", token).header("Idempotency-Key", "evaluation-1")
+                        .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body)))
+                .andExpect(status().isAccepted()).andReturn();
+        String task = json.readTree(first.getResponse().getContentAsString()).get("taskId").asText();
+        for (int i = 0; i < 40; i++) {
+            var response = mvc.perform(get("/ai/tasks/{id}", task).header("Authorization", token)).andReturn();
+            if ("SUCCEEDED".equals(json.readTree(response.getResponse().getContentAsString()).get("state").asText()))
+                break;
+            Thread.sleep(25);
+        }
+        mvc.perform(get("/photo-evaluations/{id}", task).header("Authorization", token))
+                .andExpect(jsonPath("$.trace.modelId").value("qwen3.8-max"))
+                .andExpect(jsonPath("$.result.total").value(75)).andExpect(jsonPath("$.result.exifLimit").exists())
+                .andExpect(jsonPath("$.result.technicalDiagnosis.certainty").value("INFERENCE"));
+        org.junit.jupiter.api.Assertions.assertEquals(1,
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM photo_evaluations WHERE ai_task_id = ? AND result_json IS NOT NULL",
+                        Integer.class, task));
+        var reused = mvc.perform(
+                post("/photo-evaluations").header("Authorization", token).header("Idempotency-Key", "evaluation-2")
+                        .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body)))
+                .andExpect(status().isAccepted()).andReturn();
+        org.junit.jupiter.api.Assertions.assertEquals(task,
+                json.readTree(reused.getResponse().getContentAsString()).get("taskId").asText());
+    }
+    private Map<String, Object> output() {
+        return Map.of("dimensions", Map.of("composition", 80, "light", 70), "strengths", List.of("构图清晰"),
+                "primaryProblems", List.of("背景略杂"), "priorityImprovement", "先整理背景", "technicalDiagnosis",
+                Map.of("certainty", "INFERENCE", "text", "可能是主体运动或手持抖动，建议分别检查。"), "retakeSteps",
+                List.of("固定机位", "提高快门"));
+    }
+    private String register() throws Exception {
+        String name = "evaluation" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+        var response = mvc
+                .perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(
+                                Map.of("username", name, "email", name + "@example.com", "password", "ValidPass1!"))))
+                .andReturn();
+        return "Bearer " + json.readTree(response.getResponse().getContentAsString()).get("accessToken").asText();
+    }
+    private String media(String token) throws Exception {
+        String account = json.readTree(mvc.perform(get("/test/protected").header("Authorization", token)).andReturn()
+                .getResponse().getContentAsString()).get("accountId").asText();
+        String id = UUID.randomUUID().toString();
+        jdbc.update(
+                "INSERT INTO media (id,owner_id,content_hash,width,height,original_path,ai_copy_path,exif_json) VALUES (?,?,?,?,?,?,?,JSON_OBJECT())",
+                id, account,
+                UUID.randomUUID().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", ""), 1200,
+                800, "/tmp/o.jpg", "/tmp/a.jpg");
+        return id;
+    }
+}

@@ -6,6 +6,7 @@
 
 - 移除默认敏感凭据，建立安全的环境配置与测试配置。
 - 使 auth、bootstrap 的测试无需外部数据库即可稳定执行。
+- 为整个服务端建立受版本控制的 Spotless 与 Eclipse JDT XML 格式化基线。
 
 ## Capabilities
 
@@ -19,7 +20,7 @@
 
 ## Impact
 
-影响 `bootstrap`、`auth`、测试资源和 Maven 测试配置；保持 API 与业务规则不变。
+影响 `bootstrap`、`auth`、测试资源、服务端根 Maven 配置、Eclipse JDT 格式化配置和现有 Java 源码格式；保持 API 与业务规则不变。
 
 ## Dependencies
 

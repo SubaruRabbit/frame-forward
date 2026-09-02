@@ -7,5 +7,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 class PortfolioExceptionHandler {
-  @ExceptionHandler(PortfolioService.NotFound.class) @ResponseStatus(HttpStatus.NOT_FOUND) void notFound() {}
+    @ExceptionHandler(PortfolioService.NotFound.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    void notFound() {
+    }
 }

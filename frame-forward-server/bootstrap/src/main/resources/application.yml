@@ -1,8 +1,4 @@
 spring:
-  datasource:
-    url: ${FRAME_FORWARD_DB_URL:jdbc:mysql://localhost:3306/frame-forward?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8}
-    username: ${FRAME_FORWARD_DB_USERNAME:root}
-    password: ${FRAME_FORWARD_DB_PASSWORD:123456}
   flyway:
     locations: classpath:db/migration
 mybatis-plus:

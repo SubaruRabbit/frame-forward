@@ -1,0 +1,8 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:tc:mysql:8.4.0:///frame_forward_test
+    username: test
+    password: test

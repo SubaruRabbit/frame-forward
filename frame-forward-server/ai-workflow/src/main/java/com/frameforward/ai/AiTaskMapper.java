@@ -1,4 +1,7 @@
 package com.frameforward.ai;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
-@Mapper public interface AiTaskMapper extends BaseMapper<AiTaskEntity> {}
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+@Mapper
+public interface AiTaskMapper extends BaseMapper<AiTaskEntity> {
+}

@@ -1,3 +1,19 @@
 package com.frameforward.evaluation;
-import java.util.Map; import org.springframework.http.*; import org.springframework.web.bind.annotation.*;
-@RestControllerAdvice class PhotoEvaluationExceptionHandler {@ExceptionHandler({PhotoEvaluationService.Invalid.class,ShootingSessionService.Invalid.class,RetakeComparisonService.Invalid.class}) ResponseEntity<Map<String,String>> invalid(){return ResponseEntity.badRequest().body(Map.of("code","INVALID_EVALUATION","message","照片评分或重拍对比请求无效。"));}@ExceptionHandler({PhotoEvaluationService.NotFound.class,ShootingSessionService.NotFound.class,RetakeComparisonService.NotFound.class}) ResponseEntity<Map<String,String>> notFound(){return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("code","EVALUATION_MEDIA_NOT_FOUND","message","照片、方案或会话不存在或不属于当前用户。"));}}
+import java.util.Map;
+
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+@RestControllerAdvice
+class PhotoEvaluationExceptionHandler {
+    @ExceptionHandler({PhotoEvaluationService.Invalid.class, ShootingSessionService.Invalid.class,
+            RetakeComparisonService.Invalid.class})
+    ResponseEntity<Map<String, String>> invalid() {
+        return ResponseEntity.badRequest().body(Map.of("code", "INVALID_EVALUATION", "message", "照片评分或重拍对比请求无效。"));
+    }
+    @ExceptionHandler({PhotoEvaluationService.NotFound.class, ShootingSessionService.NotFound.class,
+            RetakeComparisonService.NotFound.class})
+    ResponseEntity<Map<String, String>> notFound() {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("code", "EVALUATION_MEDIA_NOT_FOUND", "message", "照片、方案或会话不存在或不属于当前用户。"));
+    }
+}

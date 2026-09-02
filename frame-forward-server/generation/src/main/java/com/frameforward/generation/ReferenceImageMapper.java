@@ -1,7 +1,9 @@
 package com.frameforward.generation;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
 @Mapper
-public interface ReferenceImageMapper extends BaseMapper<ReferenceImageEntity> {}
+public interface ReferenceImageMapper extends BaseMapper<ReferenceImageEntity> {
+}

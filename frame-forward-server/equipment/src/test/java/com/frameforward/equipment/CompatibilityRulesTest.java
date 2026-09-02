@@ -5,7 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
 class CompatibilityRulesTest {
-    @Test void evaluatesNativeApsCCropAndCrossMountCombinations() {
+    @Test
+    void evaluatesNativeApsCCropAndCrossMountCombinations() {
         var nativeResult = CompatibilityRules.evaluate("E", "APS_C", "E", "APS_C");
         assertThat(nativeResult.compatible()).isTrue();
         assertThat(nativeResult.cropModeRequired()).isFalse();

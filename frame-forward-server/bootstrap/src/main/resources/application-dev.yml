@@ -1,0 +1,8 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: ${FRAME_FORWARD_DB_URL}
+    username: ${FRAME_FORWARD_DB_USERNAME}
+    password: ${FRAME_FORWARD_DB_PASSWORD}

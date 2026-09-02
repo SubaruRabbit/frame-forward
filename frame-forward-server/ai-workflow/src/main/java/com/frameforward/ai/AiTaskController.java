@@ -1,12 +1,35 @@
 package com.frameforward.ai;
-import com.frameforward.auth.AuthService;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-@RestController @RequestMapping("/ai/tasks") public class AiTaskController {
- private final AiTaskRuntime runtime; public AiTaskController(AiTaskRuntime runtime){this.runtime=runtime;}
- @PostMapping public ResponseEntity<AiTaskRuntime.Created> create(@RequestHeader(name="Authorization",required=false) String authorization,@RequestHeader("Idempotency-Key") String key,@RequestBody AiTaskRuntime.CreateRequest request){return ResponseEntity.accepted().body(runtime.create(token(authorization),key,request));}
- @GetMapping("/{id}") public AiTaskRuntime.Status get(@RequestHeader(name="Authorization",required=false) String authorization,@PathVariable String id){return runtime.get(token(authorization),id);}
- @GetMapping(value="/{id}/events",produces=MediaType.TEXT_EVENT_STREAM_VALUE) public SseEmitter events(@RequestHeader(name="Authorization",required=false) String authorization,@PathVariable String id){return runtime.events(token(authorization),id);}
- static String token(String header){if(header==null||!header.startsWith("Bearer ")) throw new AuthService.InvalidSessionException();return header.substring(7);}
+
+import com.frameforward.auth.AuthService;
+@RestController
+@RequestMapping("/ai/tasks")
+public class AiTaskController {
+    private final AiTaskRuntime runtime;
+    public AiTaskController(AiTaskRuntime runtime) {
+        this.runtime = runtime;
+    }
+    @PostMapping
+    public ResponseEntity<AiTaskRuntime.Created> create(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @RequestHeader("Idempotency-Key") String key, @RequestBody AiTaskRuntime.CreateRequest request) {
+        return ResponseEntity.accepted().body(runtime.create(token(authorization), key, request));
+    }
+    @GetMapping("/{id}")
+    public AiTaskRuntime.Status get(@RequestHeader(name = "Authorization", required = false) String authorization,
+            @PathVariable String id) {
+        return runtime.get(token(authorization), id);
+    }
+    @GetMapping(value = "/{id}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter events(@RequestHeader(name = "Authorization", required = false) String authorization,
+            @PathVariable String id) {
+        return runtime.events(token(authorization), id);
+    }
+    static String token(String header) {
+        if (header == null || !header.startsWith("Bearer "))
+            throw new AuthService.InvalidSessionException();
+        return header.substring(7);
+    }
 }

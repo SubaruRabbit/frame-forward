@@ -1,7 +1,9 @@
 package com.frameforward.evaluation;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
 @Mapper
-interface RetakeLinkMapper extends BaseMapper<RetakeLinkEntity> {}
+interface RetakeLinkMapper extends BaseMapper<RetakeLinkEntity> {
+}

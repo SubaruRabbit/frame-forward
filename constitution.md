@@ -1,6 +1,6 @@
 # 项目宪法
 
-> 版本：v1.1.0
+> 版本：v2.0.0
 >
 > 生效日期：2026-09-01
 >
@@ -96,3 +96,7 @@ MAJOR：删除、放宽或重新定义核心规则
 - 新增 APP 工程开发规范 v1.1.0，适用于 iOS、Android、React Native、Flutter 及其他 Hybrid APP。
 - Java 后端工程宪章升级至 v1.2.0。
 - 增加 Java 代码必须使用 Spotless 执行格式化、使用 IntelliJ IDEA 风格作为唯一格式来源，并将 `spotless:check` 纳入质量门禁的规范。
+
+### 2026-09-02
+
+- 项目技术负责人及后端模块负责人批准 MAJOR 变更：Java 格式化基线从 IntelliJ IDEA Code Style 调整为受版本控制的 Eclipse JDT XML 配置；Spotless 仍是唯一格式化执行入口，`spotless:check` 仍为强制质量门禁。

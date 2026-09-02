@@ -5,7 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 @TableName("catalog_cameras")
 public class CameraEntity {
-    @TableId public String id;
+    @TableId
+    public String id;
     public String brand;
     public String model;
     public String mount;
