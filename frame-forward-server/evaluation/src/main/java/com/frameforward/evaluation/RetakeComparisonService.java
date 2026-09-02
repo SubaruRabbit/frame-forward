@@ -35,18 +35,29 @@ public class RetakeComparisonService {
     }
     @Transactional
     public Map<String, Object> create(String token, Request request) {
-        if (request == null || blank(request.originalEvaluationId) || blank(request.retakeEvaluationId)
-                || request.originalEvaluationId.equals(request.retakeEvaluationId))
-            throw new Invalid();
+        validate(request);
         String account = auth.requireAccountId(token);
         PhotoEvaluationEntity original = owned(account, request.originalEvaluationId);
         PhotoEvaluationEntity retake = owned(account, request.retakeEvaluationId);
+        requireComparableSession(account, original, retake);
+        Map<String, Object> result = compare(original, retake);
+        createLinkIfAbsent(account, original, retake);
+        return result;
+    }
+    private void validate(Request request) {
+        if (request == null || blank(request.originalEvaluationId) || blank(request.retakeEvaluationId)
+                || request.originalEvaluationId.equals(request.retakeEvaluationId))
+            throw new Invalid();
+    }
+    private void requireComparableSession(String account, PhotoEvaluationEntity original,
+            PhotoEvaluationEntity retake) {
         if (blank(original.sessionId) || !Objects.equals(original.sessionId, retake.sessionId)
                 || sessions.selectOne(new LambdaQueryWrapper<ShootingSessionEntity>()
                         .eq(ShootingSessionEntity::getId, original.sessionId)
                         .eq(ShootingSessionEntity::getAccountId, account)) == null)
             throw new Invalid();
-        Map<String, Object> result = compare(original, retake);
+    }
+    private void createLinkIfAbsent(String account, PhotoEvaluationEntity original, PhotoEvaluationEntity retake) {
         RetakeLinkEntity link = links.selectById(retake.id);
         if (link == null) {
             link = new RetakeLinkEntity();
@@ -57,7 +68,6 @@ public class RetakeComparisonService {
             link.createdAt = Instant.now();
             links.insert(link);
         }
-        return result;
     }
     public Map<String, Object> get(String token, String retakeId) {
         String account = auth.requireAccountId(token);

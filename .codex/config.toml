@@ -1,3 +1,7 @@
 [agents.git-commit]
 description = "专门检查并提交当前项目 Git 代码变更的 subagent。"
 config_file = "agents/git-commit.toml"
+
+[mcp_servers.codegraph]
+command = "codegraph"
+args = ["serve", "--mcp"]

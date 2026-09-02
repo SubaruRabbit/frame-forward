@@ -39,46 +39,15 @@ public class MediaService implements WorkMediaCleanup, AccountDataCleanup {
     }
     @Transactional
     public MediaResponse ingest(String ownerId, MultipartFile upload) {
-        if (upload == null || upload.isEmpty())
-            throw new InvalidMediaException("A JPEG file is required");
-        if (upload.getSize() > MAX_BYTES)
-            throw new TooLargeException();
+        validateUpload(upload);
         Path temporary = null;
         try {
-            Files.createDirectories(root.resolve("tmp"));
-            temporary = Files.createTempFile(root.resolve("tmp"), "upload-", ".jpg");
-            try (InputStream in = upload.getInputStream()) {
-                copyBounded(in, temporary);
-            }
+            temporary = copyToTemporaryFile(upload);
             String hash = sha256(temporary);
-            var existing = media.selectOne(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getOwnerId, ownerId)
-                    .eq(MediaEntity::getContentHash, hash));
+            MediaEntity existing = findExisting(ownerId, hash);
             if (existing != null)
                 return response(existing);
-            byte[] signature = Files.readAllBytes(temporary);
-            if (signature.length < 3 || (signature[0] & 255) != 255 || (signature[1] & 255) != 216
-                    || (signature[2] & 255) != 255)
-                throw new InvalidMediaException("File is not a JPEG");
-            BufferedImage decoded = ImageIO.read(temporary.toFile());
-            if (decoded == null)
-                throw new InvalidMediaException("JPEG cannot be decoded");
-            Metadata metadata = ImageMetadataReader.readMetadata(temporary.toFile());
-            int orientation = orientation(metadata);
-            BufferedImage corrected = orient(decoded, orientation);
-            String id = UUID.randomUUID().toString();
-            Path originals = root.resolve("original");
-            Path ai = root.resolve("ai");
-            Files.createDirectories(originals);
-            Files.createDirectories(ai);
-            Path original = originals.resolve(id + ".jpg");
-            Path sanitized = ai.resolve(id + ".jpg");
-            Files.move(temporary, original, StandardCopyOption.ATOMIC_MOVE);
-            temporary = null;
-            if (!ImageIO.write(corrected, "jpeg", sanitized.toFile()))
-                throw new InvalidMediaException("JPEG encoder unavailable");
-            MediaEntity saved = new MediaEntity(id, ownerId, hash, corrected.getWidth(), corrected.getHeight(),
-                    original.toString(), sanitized.toString(), allowedExif(metadata));
-            media.insert(saved);
+            MediaEntity saved = storeDecodedMedia(ownerId, hash, temporary);
             return response(saved);
         } catch (TooLargeException | InvalidMediaException e) {
             throw e;
@@ -91,6 +60,65 @@ public class MediaService implements WorkMediaCleanup, AccountDataCleanup {
                 } catch (IOException ignored) {
                 }
         }
+    }
+    private static void validateUpload(MultipartFile upload) {
+        if (upload == null || upload.isEmpty())
+            throw new InvalidMediaException("A JPEG file is required");
+        if (upload.getSize() > MAX_BYTES)
+            throw new TooLargeException();
+    }
+    private Path copyToTemporaryFile(MultipartFile upload) throws IOException {
+        Path temporaryDirectory = root.resolve("tmp");
+        Files.createDirectories(temporaryDirectory);
+        Path temporary = Files.createTempFile(temporaryDirectory, "upload-", ".jpg");
+        try (InputStream in = upload.getInputStream()) {
+            copyBounded(in, temporary);
+        }
+        return temporary;
+    }
+    private MediaEntity findExisting(String ownerId, String hash) {
+        return media.selectOne(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getOwnerId, ownerId)
+                .eq(MediaEntity::getContentHash, hash));
+    }
+    private MediaEntity storeDecodedMedia(String ownerId, String hash, Path temporary) throws Exception {
+        BufferedImage decoded = readJpeg(temporary);
+        Metadata metadata = ImageMetadataReader.readMetadata(temporary.toFile());
+        BufferedImage corrected = orient(decoded, orientation(metadata));
+        String id = UUID.randomUUID().toString();
+        Path original = moveOriginal(temporary, id);
+        Path sanitized = writeSanitizedCopy(corrected, id);
+        MediaEntity saved = new MediaEntity(id, ownerId, hash, corrected.getWidth(), corrected.getHeight(),
+                original.toString(), sanitized.toString(), allowedExif(metadata));
+        media.insert(saved);
+        return saved;
+    }
+    private static BufferedImage readJpeg(Path temporary) throws IOException {
+        byte[] signature = Files.readAllBytes(temporary);
+        if (!hasJpegSignature(signature))
+            throw new InvalidMediaException("File is not a JPEG");
+        BufferedImage decoded = ImageIO.read(temporary.toFile());
+        if (decoded == null)
+            throw new InvalidMediaException("JPEG cannot be decoded");
+        return decoded;
+    }
+    private static boolean hasJpegSignature(byte[] signature) {
+        return signature.length >= 3 && (signature[0] & 255) == 255 && (signature[1] & 255) == 216
+                && (signature[2] & 255) == 255;
+    }
+    private Path moveOriginal(Path temporary, String id) throws IOException {
+        Path originals = root.resolve("original");
+        Files.createDirectories(originals);
+        Path original = originals.resolve(id + ".jpg");
+        Files.move(temporary, original, StandardCopyOption.ATOMIC_MOVE);
+        return original;
+    }
+    private Path writeSanitizedCopy(BufferedImage corrected, String id) throws IOException {
+        Path ai = root.resolve("ai");
+        Files.createDirectories(ai);
+        Path sanitized = ai.resolve(id + ".jpg");
+        if (!ImageIO.write(corrected, "jpeg", sanitized.toFile()))
+            throw new InvalidMediaException("JPEG encoder unavailable");
+        return sanitized;
     }
     public MediaResponse get(String ownerId, String id) {
         var item = media.selectOne(

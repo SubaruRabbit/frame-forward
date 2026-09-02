@@ -30,31 +30,48 @@ public class PhotoEvaluationService {
     }
     @Transactional
     public AiTaskRuntime.Created create(String token, String key, Request request) {
+        validate(request);
+        String account = auth.requireAccountId(token);
+        MediaEntity photo = findOwnedPhoto(account, request.mediaId);
+        requireOwnedSession(account, request.sessionId);
+        PhotoEvaluationEntity cached = findCachedEvaluation(account, photo, request);
+        if (cached != null)
+            return new AiTaskRuntime.Created(cached.aiTaskId, AiTaskRuntime.State.QUEUED);
+        AiTaskRuntime.Created task = submitEvaluation(token, key, request, photo);
+        evaluations.insert(newEvaluation(account, request, photo, task));
+        return task;
+    }
+    private static void validate(Request request) {
         if (request == null || request.mediaId == null || request.mediaId.isBlank())
             throw new Invalid();
-        String account = auth.requireAccountId(token);
-        var photo = media.selectOne(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getId, request.mediaId)
+    }
+    private MediaEntity findOwnedPhoto(String account, String mediaId) {
+        MediaEntity photo = media.selectOne(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getId, mediaId)
                 .eq(MediaEntity::getOwnerId, account));
         if (photo == null)
             throw new NotFound();
-        if (request.sessionId != null && !request.sessionId.isBlank()
-                && sessions.selectOne(new LambdaQueryWrapper<ShootingSessionEntity>()
-                        .eq(ShootingSessionEntity::getId, request.sessionId)
-                        .eq(ShootingSessionEntity::getAccountId, account)) == null)
+        return photo;
+    }
+    private void requireOwnedSession(String account, String sessionId) {
+        if (sessionId != null && !sessionId.isBlank()
+                && sessions.selectOne(
+                        new LambdaQueryWrapper<ShootingSessionEntity>().eq(ShootingSessionEntity::getId, sessionId)
+                                .eq(ShootingSessionEntity::getAccountId, account)) == null)
             throw new NotFound();
-        if (!request.reanalyze) {
-            var query = new LambdaQueryWrapper<PhotoEvaluationEntity>().eq(PhotoEvaluationEntity::getAccountId, account)
-                    .eq(PhotoEvaluationEntity::getContentHash, photo.contentHash)
-                    .eq(PhotoEvaluationEntity::getRuleVersion, RULE)
-                    .eq(PhotoEvaluationEntity::getExecutionVersion, RULE);
-            if (request.sessionId == null || request.sessionId.isBlank())
-                query.isNull(PhotoEvaluationEntity::getSessionId);
-            else
-                query.eq(PhotoEvaluationEntity::getSessionId, request.sessionId);
-            var cached = evaluations.selectOne(query);
-            if (cached != null)
-                return new AiTaskRuntime.Created(cached.aiTaskId, AiTaskRuntime.State.QUEUED);
-        }
+    }
+    private PhotoEvaluationEntity findCachedEvaluation(String account, MediaEntity photo, Request request) {
+        if (request.reanalyze)
+            return null;
+        var query = new LambdaQueryWrapper<PhotoEvaluationEntity>().eq(PhotoEvaluationEntity::getAccountId, account)
+                .eq(PhotoEvaluationEntity::getContentHash, photo.contentHash)
+                .eq(PhotoEvaluationEntity::getRuleVersion, RULE).eq(PhotoEvaluationEntity::getExecutionVersion, RULE);
+        if (request.sessionId == null || request.sessionId.isBlank())
+            query.isNull(PhotoEvaluationEntity::getSessionId);
+        else
+            query.eq(PhotoEvaluationEntity::getSessionId, request.sessionId);
+        return evaluations.selectOne(query);
+    }
+    private AiTaskRuntime.Created submitEvaluation(String token, String key, Request request, MediaEntity photo) {
         var input = new LinkedHashMap<String, Object>();
         input.put("mediaId", photo.id);
         input.put("intent", request.intent == null ? "" : request.intent);
@@ -66,8 +83,11 @@ public class PhotoEvaluationService {
         var ai = new AiTaskRuntime.CreateRequest();
         ai.operationType = "photo-evaluation";
         ai.input = input;
-        var task = tasks.create(token, key, ai);
-        var entity = new PhotoEvaluationEntity();
+        return tasks.create(token, key, ai);
+    }
+    private PhotoEvaluationEntity newEvaluation(String account, Request request, MediaEntity photo,
+            AiTaskRuntime.Created task) {
+        PhotoEvaluationEntity entity = new PhotoEvaluationEntity();
         entity.id = UUID.randomUUID().toString();
         entity.accountId = account;
         entity.mediaId = photo.id;
@@ -77,8 +97,7 @@ public class PhotoEvaluationService {
         entity.executionVersion = request.reanalyze ? RULE + "-r" + entity.id.substring(0, 8) : RULE;
         entity.aiTaskId = task.taskId();
         entity.createdAt = Instant.now();
-        evaluations.insert(entity);
-        return task;
+        return entity;
     }
     @Transactional
     public AiTaskRuntime.Status result(String token, String taskId) {

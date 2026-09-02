@@ -1,17 +1,23 @@
 package com.frameforward.media;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import javax.imageio.ImageIO;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
 
 class MediaServiceTest {
@@ -25,6 +31,22 @@ class MediaServiceTest {
     void rejectsOversizedJpeg() {
         var file = new MockMultipartFile("file", "large.jpg", "image/jpeg", new byte[(int) MediaService.MAX_BYTES + 1]);
         assertThrows(MediaService.TooLargeException.class, () -> service.ingest("owner", file));
+    }
+
+    @Test
+    void storesOriginalAndSanitizedCopiesForADecodedJpeg(@TempDir Path root) throws Exception {
+        MediaMapper mapper = mock(MediaMapper.class);
+        var file = new MockMultipartFile("file", "photo.jpg", "image/jpeg", jpeg(12, 8));
+
+        MediaService.MediaResponse response = new MediaService(mapper, root.toString()).ingest("owner", file);
+
+        ArgumentCaptor<MediaEntity> saved = ArgumentCaptor.forClass(MediaEntity.class);
+        verify(mapper).insert(saved.capture());
+        assertEquals(saved.getValue().id, response.id());
+        assertEquals(12, response.width());
+        assertEquals(8, response.height());
+        assertTrue(Files.exists(Path.of(saved.getValue().originalPath)));
+        assertTrue(Files.exists(Path.of(saved.getValue().aiCopyPath)));
     }
     @Test
     void cannotFetchAnotherOwnersMedia() {
@@ -75,5 +97,11 @@ class MediaServiceTest {
         org.junit.jupiter.api.Assertions.assertTrue(Files.exists(shared));
         verify(mapper).deleteById("one");
         verify(mapper).deleteById("two");
+    }
+
+    private static byte[] jpeg(int width, int height) throws Exception {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        assertTrue(ImageIO.write(new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB), "jpeg", output));
+        return output.toByteArray();
     }
 }

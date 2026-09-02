@@ -41,19 +41,32 @@ public class PortfolioService {
 
     public Page list(String token, Filter filter) {
         String accountId = auth.requireAccountId(token);
-        Filter safe = filter == null ? new Filter(null, 20, null, null, null, null) : filter.normalized();
+        Filter safe = safeFilter(filter);
         List<Map<String, Object>> all = new ArrayList<>();
-        for (PortfolioMediaQuery.Item item : media.listOwned(accountId)) {
-            if (deletionStarted(accountId, item.mediaId()))
-                continue;
-            if (safe.cursor != null && item.mediaId().compareTo(safe.cursor) >= 0)
-                continue;
-            boolean favorite = favorite(accountId, item.mediaId());
-            if ((safe.favorite == null || safe.favorite == favorite)
-                    && matches(item.exif(), safe.subject, safe.camera, safe.lens))
-                all.add(summary(accountId, item, favorite));
-        }
-        List<Map<String, Object>> items = all.subList(0, Math.min(safe.limit, all.size()));
+        collectMatchingSummaries(accountId, safe, all);
+        return page(all, safe.limit);
+    }
+    private static Filter safeFilter(Filter filter) {
+        return filter == null ? new Filter(null, 20, null, null, null, null) : filter.normalized();
+    }
+    private void collectMatchingSummaries(String accountId, Filter filter, List<Map<String, Object>> all) {
+        for (PortfolioMediaQuery.Item item : media.listOwned(accountId))
+            addSummaryIfMatching(accountId, filter, all, item);
+    }
+    private void addSummaryIfMatching(String accountId, Filter filter, List<Map<String, Object>> all,
+            PortfolioMediaQuery.Item item) {
+        if (deletionStarted(accountId, item.mediaId()) || afterCursor(item, filter.cursor))
+            return;
+        boolean favorite = favorite(accountId, item.mediaId());
+        if ((filter.favorite == null || filter.favorite == favorite)
+                && matches(item.exif(), filter.subject, filter.camera, filter.lens))
+            all.add(summary(accountId, item, favorite));
+    }
+    private static boolean afterCursor(PortfolioMediaQuery.Item item, String cursor) {
+        return cursor != null && item.mediaId().compareTo(cursor) >= 0;
+    }
+    private static Page page(List<Map<String, Object>> all, int limit) {
+        List<Map<String, Object>> items = all.subList(0, Math.min(limit, all.size()));
         String nextCursor = all.size() > items.size() ? String.valueOf(items.getLast().get("mediaId")) : null;
         return new Page(items, nextCursor);
     }

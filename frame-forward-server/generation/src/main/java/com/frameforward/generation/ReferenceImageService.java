@@ -75,13 +75,21 @@ public class ReferenceImageService {
                 + selectedPlan.get("exposure") + "。仅表达构图与氛围，不宣称真实结果。";
     }
     private static void validate(Request request) {
-        if (request == null || blank(request.environmentMediaId) || blank(request.shootingPlanId)
-                || request.selectedPlan == null || blank(request.selectedPlan.get("label"))
-                || blank(request.selectedPlan.get("position")) || blank(request.selectedPlan.get("cameraHeight"))
-                || blank(request.selectedPlan.get("composition")) || blank(request.selectedPlan.get("orientation"))
-                || !(request.selectedPlan.get("focalLengthMm") instanceof Number)
-                || !(request.selectedPlan.get("exposure") instanceof Map<?, ?>))
+        if (!hasRequiredContext(request) || !hasRequiredPlanText(request.selectedPlan)
+                || !hasStructuredPlanFields(request.selectedPlan))
             throw new InvalidRequest();
+    }
+    private static boolean hasRequiredContext(Request request) {
+        return request != null && !blank(request.environmentMediaId) && !blank(request.shootingPlanId);
+    }
+    private static boolean hasRequiredPlanText(Map<String, Object> selectedPlan) {
+        return selectedPlan != null && !blank(selectedPlan.get("label")) && !blank(selectedPlan.get("position"))
+                && !blank(selectedPlan.get("cameraHeight")) && !blank(selectedPlan.get("composition"))
+                && !blank(selectedPlan.get("orientation"));
+    }
+    private static boolean hasStructuredPlanFields(Map<String, Object> selectedPlan) {
+        return selectedPlan != null && selectedPlan.get("focalLengthMm") instanceof Number
+                && selectedPlan.get("exposure") instanceof Map<?, ?>;
     }
     private static boolean blank(Object value) {
         return !(value instanceof String text) || text.isBlank();

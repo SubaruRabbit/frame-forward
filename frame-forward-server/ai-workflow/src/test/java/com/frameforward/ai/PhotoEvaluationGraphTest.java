@@ -21,6 +21,15 @@ class PhotoEvaluationGraphTest {
         invalid.put("total", 101);
         assertFalse(graph.valid(invalid));
     }
+    @Test
+    void calculatesWeightedTotalAndRejectsInvalidDimensionScore() {
+        var weighted = graph.execute(Map.of("mockOutput", output(), "weights", Map.of("composition", 3, "light", 1)));
+        assertEquals(78L, weighted.get("total"));
+        var invalid = new HashMap<>(output());
+        invalid.put("total", 50);
+        invalid.put("dimensions", Map.of("composition", 0));
+        assertFalse(graph.valid(invalid));
+    }
     private Map<String, Object> output() {
         return Map.of("dimensions", Map.of("composition", 80, "light", 70), "strengths", List.of("清晰"),
                 "primaryProblems", List.of("背景杂"), "priorityImprovement", "整理背景", "technicalDiagnosis",

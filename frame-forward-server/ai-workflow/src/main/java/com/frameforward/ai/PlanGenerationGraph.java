@@ -23,20 +23,31 @@ public class PlanGenerationGraph {
     private boolean completeAndSafe(Object value) {
         if (!(value instanceof Map<?, ?> plan))
             return false;
+        return hasSafePosition(plan) && hasSupportedFocalLength(plan) && hasRequiredInstructions(plan)
+                && hasSafeExposure(plan) && hasSteps(plan);
+    }
+    private static boolean hasSafePosition(Map<?, ?> plan) {
         String position = String.valueOf(plan.get("position"));
-        if (position.contains("ROADWAY") || position.contains("车道") || position.contains("边缘"))
+        return !position.contains("ROADWAY") && !position.contains("车道") && !position.contains("边缘");
+    }
+    private static boolean hasSupportedFocalLength(Map<?, ?> plan) {
+        return plan.get("focalLengthMm") instanceof Number focalLength && focalLength.intValue() >= 1
+                && focalLength.intValue() <= 1200;
+    }
+    private static boolean hasRequiredInstructions(Map<?, ?> plan) {
+        return plan.get("accessoryUse") instanceof String accessory && !accessory.isBlank()
+                && plan.get("focus") instanceof String focus && !focus.isBlank();
+    }
+    private static boolean hasSafeExposure(Map<?, ?> plan) {
+        if (!(plan.get("exposure") instanceof Map<?, ?> settings))
             return false;
-        if (!(plan.get("focalLengthMm") instanceof Number focalLength) || focalLength.intValue() < 1
-                || focalLength.intValue() > 1200)
-            return false;
-        if (!(plan.get("accessoryUse") instanceof String accessory) || !(plan.get("focus") instanceof String focus)
-                || accessory.isBlank() || focus.isBlank())
-            return false;
-        Object exposure = plan.get("exposure");
-        if (!(exposure instanceof Map<?, ?> settings) || !Boolean.TRUE.equals(settings.get("startingPoint"))
-                || !(settings.get("iso") instanceof Number iso) || iso.intValue() < 50 || iso.intValue() > 102400
-                || blank(settings.get("aperture")) || blank(settings.get("shutterSpeed")))
-            return false;
+        return Boolean.TRUE.equals(settings.get("startingPoint")) && hasSupportedIso(settings)
+                && !blank(settings.get("aperture")) && !blank(settings.get("shutterSpeed"));
+    }
+    private static boolean hasSupportedIso(Map<?, ?> settings) {
+        return settings.get("iso") instanceof Number iso && iso.intValue() >= 50 && iso.intValue() <= 102400;
+    }
+    private static boolean hasSteps(Map<?, ?> plan) {
         return plan.get("steps") instanceof List<?> steps && !steps.isEmpty();
     }
     private static boolean blank(Object value) {

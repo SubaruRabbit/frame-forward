@@ -35,6 +35,8 @@
     <properties>
         <java.version>21</java.version>
         <spotless.version>3.9.0</spotless.version>
+        <jacoco.version>0.8.12</jacoco.version>
+        <maven.pmd.plugin.version>3.26.0</maven.pmd.plugin.version>
     </properties>
 
     <build>
@@ -66,6 +68,63 @@
                         <lineEndings>UNIX</lineEndings>
                     </java>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-jacoco-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>generate-jacoco-xml-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <formats>
+                                <format>XML</format>
+                            </formats>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>${maven.pmd.plugin.version}</version>
+                <configuration>
+                    <includeTests>false</includeTests>
+                    <failOnViolation>true</failOnViolation>
+                    <failOnError>true</failOnError>
+                    <format>xml</format>
+                    <minimumTokens>100</minimumTokens>
+                    <rulesets>
+                        <ruleset>${maven.multiModuleProjectDirectory}/config/pmd-ruleset.xml</ruleset>
+                    </rulesets>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>generate-pmd-report-and-enforce-complexity</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>pmd</goal>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>generate-cpd-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>cpd</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.flywaydb</groupId>

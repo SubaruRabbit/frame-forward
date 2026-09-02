@@ -3,6 +3,7 @@ package com.frameforward.ai;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,12 @@ class PlanGenerationGraphTest {
         assertFalse(graph.valid(Map.of("plans", List.of(plan("车道中央", 400), plan("人行道", 400)))));
         assertFalse(graph.valid(Map.of("plans", List.of(plan("人行道", 25), plan("人行道", 400)))));
         assertTrue(graph.valid(Map.of("plans", List.of(plan("人行道", 400), plan("广场", 800)))));
+    }
+    @Test
+    void rejectsPlanWithMissingRequiredFields() {
+        var incomplete = new HashMap<>(plan("人行道", 400));
+        incomplete.remove("focus");
+        assertFalse(graph.valid(Map.of("plans", List.of(incomplete, plan("广场", 800)))));
     }
     private Map<String, Object> plan(String position, int iso) {
         return Map.of("recommended", position.equals("人行道"), "position", position, "focalLengthMm", 35, "accessoryUse",

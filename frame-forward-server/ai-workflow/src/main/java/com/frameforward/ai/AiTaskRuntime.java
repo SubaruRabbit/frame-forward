@@ -74,14 +74,31 @@ public class AiTaskRuntime {
         }
     }
     public Created create(String accessToken, String key, CreateRequest request) {
+        validateCreateRequest(key, request);
+        var accountId = auth.requireAccountId(accessToken);
+        var existing = findExistingTask(accountId, request.operationType, key);
+        if (existing != null)
+            return new Created(existing.id, State.valueOf(existing.state));
+        var task = newTask(accountId, key, request);
+        try {
+            tasks.insert(task);
+        } catch (DuplicateKeyException duplicate) {
+            var found = findExistingTask(accountId, request.operationType, key);
+            return new Created(found.id, State.valueOf(found.state));
+        }
+        schedule(task.id);
+        return new Created(task.id, State.QUEUED);
+    }
+    private static void validateCreateRequest(String key, CreateRequest request) {
         if (key == null || key.isBlank() || key.length() > 128 || request == null || request.operationType == null
                 || request.operationType.isBlank())
             throw new BadRequest();
-        var accountId = auth.requireAccountId(accessToken);
-        var existing = tasks.selectOne(new LambdaQueryWrapper<AiTaskEntity>().eq(AiTaskEntity::getAccountId, accountId)
-                .eq(AiTaskEntity::getOperationType, request.operationType).eq(AiTaskEntity::getIdempotencyKey, key));
-        if (existing != null)
-            return new Created(existing.id, State.valueOf(existing.state));
+    }
+    private AiTaskEntity findExistingTask(String accountId, String operationType, String key) {
+        return tasks.selectOne(new LambdaQueryWrapper<AiTaskEntity>().eq(AiTaskEntity::getAccountId, accountId)
+                .eq(AiTaskEntity::getOperationType, operationType).eq(AiTaskEntity::getIdempotencyKey, key));
+    }
+    private AiTaskEntity newTask(String accountId, String key, CreateRequest request) {
         var task = new AiTaskEntity();
         task.id = UUID.randomUUID().toString();
         task.accountId = accountId;
@@ -95,16 +112,7 @@ public class AiTaskRuntime {
         task.schemaVersion = "v1";
         task.inputJson = write(request.input == null ? Map.of() : request.input);
         task.createdAt = task.updatedAt = Instant.now();
-        try {
-            tasks.insert(task);
-        } catch (DuplicateKeyException duplicate) {
-            var found = tasks.selectOne(new LambdaQueryWrapper<AiTaskEntity>().eq(AiTaskEntity::getAccountId, accountId)
-                    .eq(AiTaskEntity::getOperationType, request.operationType)
-                    .eq(AiTaskEntity::getIdempotencyKey, key));
-            return new Created(found.id, State.valueOf(found.state));
-        }
-        schedule(task.id);
-        return new Created(task.id, State.QUEUED);
+        return task;
     }
     public Status get(String accessToken, String id) {
         var task = owned(accessToken, id);

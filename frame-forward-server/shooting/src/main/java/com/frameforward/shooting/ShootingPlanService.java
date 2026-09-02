@@ -28,14 +28,26 @@ public class ShootingPlanService {
     }
     @Transactional
     public AiTaskRuntime.Created create(String token, String key, Request request) {
+        validate(request);
+        String account = auth.requireAccountId(token);
+        var scene = findOwnedScene(account, request.sceneAnalysisId);
+        var task = submitPlanGeneration(token, key, scene, request);
+        persistPlanIfAbsent(account, scene, task);
+        return task;
+    }
+    private static void validate(Request request) {
         if (request == null || request.sceneAnalysisId == null || request.sceneAnalysisId.isBlank())
             throw new InvalidRequest();
-        String account = auth.requireAccountId(token);
-        var scene = scenes.selectOne(
-                new LambdaQueryWrapper<SceneAnalysisEntity>().eq(SceneAnalysisEntity::getId, request.sceneAnalysisId)
-                        .eq(SceneAnalysisEntity::getAccountId, account));
+    }
+    private SceneAnalysisEntity findOwnedScene(String account, String sceneAnalysisId) {
+        var scene = scenes.selectOne(new LambdaQueryWrapper<SceneAnalysisEntity>()
+                .eq(SceneAnalysisEntity::getId, sceneAnalysisId).eq(SceneAnalysisEntity::getAccountId, account));
         if (scene == null)
             throw new SceneNotFound();
+        return scene;
+    }
+    private AiTaskRuntime.Created submitPlanGeneration(String token, String key, SceneAnalysisEntity scene,
+            Request request) {
         var input = new LinkedHashMap<String, Object>();
         input.put("scene", Map.of("id", scene.id, "subject", scene.subjectText, "style", scene.targetStyle));
         input.put("equipmentSnapshot", read(scene.equipmentSnapshotJson));
@@ -44,20 +56,25 @@ public class ShootingPlanService {
         var taskRequest = new AiTaskRuntime.CreateRequest();
         taskRequest.operationType = "shooting-plan-generation";
         taskRequest.input = input;
-        var task = tasks.create(token, key, taskRequest);
+        return tasks.create(token, key, taskRequest);
+    }
+    private void persistPlanIfAbsent(String account, SceneAnalysisEntity scene, AiTaskRuntime.Created task) {
         if (plans.selectOne(new LambdaQueryWrapper<ShootingPlanEntity>().eq(ShootingPlanEntity::getAiTaskId,
                 task.taskId())) == null) {
-            var entity = new ShootingPlanEntity();
-            entity.id = UUID.randomUUID().toString();
-            entity.accountId = account;
-            entity.sceneAnalysisId = scene.id;
-            entity.aiTaskId = task.taskId();
-            entity.sceneSnapshotJson = write(input.get("scene"));
-            entity.equipmentSnapshotJson = scene.equipmentSnapshotJson;
-            entity.createdAt = Instant.now();
-            plans.insert(entity);
+            plans.insert(newPlan(account, scene, task));
         }
-        return task;
+    }
+    private ShootingPlanEntity newPlan(String account, SceneAnalysisEntity scene, AiTaskRuntime.Created task) {
+        var entity = new ShootingPlanEntity();
+        entity.id = UUID.randomUUID().toString();
+        entity.accountId = account;
+        entity.sceneAnalysisId = scene.id;
+        entity.aiTaskId = task.taskId();
+        entity.sceneSnapshotJson = write(
+                Map.of("id", scene.id, "subject", scene.subjectText, "style", scene.targetStyle));
+        entity.equipmentSnapshotJson = scene.equipmentSnapshotJson;
+        entity.createdAt = Instant.now();
+        return entity;
     }
     private Object read(String value) {
         try {

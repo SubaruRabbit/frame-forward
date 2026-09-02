@@ -80,11 +80,19 @@ public class SceneAnalysisService {
     }
 
     private void validate(Request request) {
-        if (request == null || blank(request.environmentMediaId) || blank(request.subjectType) || blank(request.subject)
-                || blank(request.targetStyle) || request.timeConstraintMinutes == null
-                || request.timeConstraintMinutes < 1 || request.timeConstraintMinutes > 1440
-                || request.equipmentIds == null)
+        if (!hasRequiredText(request) || !hasSupportedTimeConstraint(request) || !hasEquipmentIds(request))
             throw new InvalidRequest();
+    }
+    private static boolean hasRequiredText(Request request) {
+        return request != null && !blank(request.environmentMediaId) && !blank(request.subjectType)
+                && !blank(request.subject) && !blank(request.targetStyle);
+    }
+    private static boolean hasSupportedTimeConstraint(Request request) {
+        return request != null && request.timeConstraintMinutes != null && request.timeConstraintMinutes >= 1
+                && request.timeConstraintMinutes <= 1440;
+    }
+    private static boolean hasEquipmentIds(Request request) {
+        return request != null && request.equipmentIds != null;
     }
     private static boolean blank(String value) {
         return value == null || value.isBlank();
