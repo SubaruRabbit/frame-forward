@@ -70,3 +70,4 @@ frame-forward-app/android/captures/
 
 # Local application data
 frame-forward-server/**/var/
+contracts/openapi-current.json

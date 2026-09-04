@@ -1,0 +1,2974 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FrameForward API",
+    "version": "0.1.0",
+    "description": "Client and server contract for FrameForward.",
+    "license": {
+      "name": "Proprietary",
+      "identifier": "LicenseRef-FrameForward-Proprietary"
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "security": [],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "operationId": "register",
+        "summary": "Register an account with a username or email address.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account registered and session issued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "409": {
+            "description": "Username or normalized email is already registered."
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "Start a session with a username or email and password.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session issued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "description": "Invalid username, email, or password."
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "refreshSession",
+        "summary": "Rotate a renewable session.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rotated session issued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refresh session is invalid, expired, revoked, or replayed."
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "summary": "Revoke the current renewable session.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The current refresh session was revoked."
+          },
+          "401": {
+            "description": "No valid authenticated session exists."
+          }
+        }
+      }
+    },
+    "/auth/password": {
+      "put": {
+        "operationId": "changePassword",
+        "summary": "Change the current account password and revoke prior refresh sessions.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Password changed and prior refresh sessions revoked."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "description": "No valid session or current password is incorrect."
+          }
+        }
+      }
+    },
+    "/auth/account-deletions": {
+      "post": {
+        "operationId": "startAccountDeletion",
+        "summary": "Verify the current password, revoke all sessions, and start irreversible account cleanup.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountDeletionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Account cleanup job accepted. Keep deletionToken only to query or retry this job while it remains valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid session or current password is incorrect."
+          }
+        }
+      }
+    },
+    "/auth/account-deletions/{jobId}": {
+      "get": {
+        "operationId": "getAccountDeletion",
+        "summary": "Get a deletion job using its short-lived job credential after ordinary sessions are revoked.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Account-Deletion-Token",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current cleanup state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Deletion job credential is invalid or expired."
+          }
+        }
+      },
+      "post": {
+        "operationId": "retryAccountDeletion",
+        "summary": "Retry a failed account cleanup job using its short-lived job credential.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Account-Deletion-Token",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Cleanup retry accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Deletion job credential is invalid or expired."
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Check service availability.",
+        "responses": {
+          "200": {
+            "description": "Service is available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "UP"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error."
+          }
+        }
+      }
+    },
+    "/ai/tasks": {
+      "post": {
+        "operationId": "createAiTask",
+        "summary": "Create or recover an asynchronous AI task.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiTaskCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Task created or recovered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiTaskCreated"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is required"
+          }
+        }
+      }
+    },
+    "/ai/tasks/{taskId}": {
+      "get": {
+        "operationId": "getAiTask",
+        "summary": "Get the current AI task state and result.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "taskId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiTaskStatus"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found"
+          }
+        }
+      }
+    },
+    "/ai/tasks/{taskId}/events": {
+      "get": {
+        "operationId": "streamAiTaskEvents",
+        "summary": "Subscribe to AI task progress events.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "taskId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server sent events",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiTaskEvent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is required"
+          }
+        }
+      }
+    },
+    "/scene-analyses": {
+      "post": {
+        "operationId": "createSceneAnalysis",
+        "summary": "Analyze one owned environment JPEG into structured scene facts.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SceneAnalysisRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Analysis task accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiTaskCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "description": "Authentication is required"
+          },
+          "404": {
+            "description": "Environment media or selected equipment is not owned by the requester."
+          }
+        }
+      }
+    },
+    "/shooting-plans": {
+      "post": {
+        "operationId": "createShootingPlans",
+        "summary": "Generate two or three ranked, equipment-constrained shooting plans from an owned scene analysis.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShootingPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Plan task accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiTaskCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Scene analysis not owned by requester."
+          }
+        }
+      }
+    },
+    "/reference-images": {
+      "post": {
+        "operationId": "createReferenceImage",
+        "summary": "Generate an owned visual reference from an environment JPEG and selected shooting plan.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferenceImageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Reference image task accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiTaskCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Environment media or shooting plan is not owned by requester."
+          }
+        }
+      }
+    },
+    "/photo-evaluations": {
+      "post": {
+        "operationId": "createPhotoEvaluation",
+        "summary": "Score an owned JPEG and return ordered visual and technical feedback.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoEvaluationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Evaluation task accepted or reused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiTaskCreated"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned JPEG not found."
+          }
+        }
+      }
+    },
+    "/retake-comparisons": {
+      "post": {
+        "operationId": "createRetakeComparison",
+        "summary": "Link two owned evaluated works from one shooting session and return their structured comparison.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetakeComparisonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Retake relationship created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetakeComparison"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Works are not from the same shooting session or have incomplete evaluations."
+          },
+          "404": {
+            "description": "An evaluated work is not owned by the requester."
+          }
+        }
+      }
+    },
+    "/shooting-sessions": {
+      "post": {
+        "operationId": "createShootingSession",
+        "summary": "Create an owned shooting session bound to a selected shooting plan.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShootingSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Shooting session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShootingSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "404": {
+            "description": "Shooting plan is not owned by the requester."
+          }
+        }
+      }
+    },
+    "/retake-comparisons/{retakeEvaluationId}": {
+      "get": {
+        "operationId": "getRetakeComparison",
+        "summary": "Get an owned retake comparison by its retake evaluation.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "retakeEvaluationId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Structured retake comparison",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetakeComparison"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Retake relationship not found or not owned by the requester."
+          }
+        }
+      }
+    },
+    "/portfolio/works": {
+      "get": {
+        "operationId": "listPortfolioWorks",
+        "summary": "List the authenticated user's private works with optional subject, camera, lens, and favorite filters.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "in": "query",
+            "name": "subject",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "in": "query",
+            "name": "camera",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "in": "query",
+            "name": "lens",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "in": "query",
+            "name": "favorite",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of owned works.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioWorkPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          }
+        }
+      }
+    },
+    "/portfolio/works/{mediaId}": {
+      "get": {
+        "operationId": "getPortfolioWork",
+        "summary": "Get one owned work and the availability of its optional detail sections.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mediaId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned work detail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioWorkDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Work not found or not owned by the requester."
+          }
+        }
+      },
+      "put": {
+        "operationId": "setPortfolioWorkFavorite",
+        "summary": "Set favorite state for one owned work.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mediaId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioFavoriteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Favorite state saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioFavorite"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Work not found or not owned by the requester."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePortfolioWork",
+        "summary": "Start idempotent cleanup of one owned work and all of its private derived data.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mediaId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Deletion job accepted or reused.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioWorkDeletionJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          },
+          "404": {
+            "description": "Work not found or not owned by the requester."
+          }
+        }
+      }
+    },
+    "/portfolio/work-deletions/{jobId}": {
+      "get": {
+        "operationId": "getPortfolioWorkDeletion",
+        "summary": "Get the current cleanup status for one owned work deletion job.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current deletion job status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioWorkDeletionJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          },
+          "404": {
+            "description": "Deletion job not found or not owned by the requester."
+          }
+        }
+      }
+    },
+    "/media/jpeg": {
+      "post": {
+        "operationId": "uploadJpeg",
+        "summary": "Upload a decodable JPEG no larger than 50 MB.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "JPEG image, at most 50 MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "JPEG accepted and stored privately.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "description": "Authentication required."
+          },
+          "413": {
+            "description": "The file exceeds the 50 MB limit."
+          }
+        }
+      }
+    },
+    "/media/{mediaId}": {
+      "get": {
+        "operationId": "getMediaMetadata",
+        "summary": "Fetch private media metadata owned by the authenticated account.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private media metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          },
+          "404": {
+            "description": "No media owned by the authenticated account exists."
+          }
+        }
+      }
+    },
+    "/media/uploads/{uploadId}": {
+      "get": {
+        "operationId": "getUploadProgress",
+        "summary": "Get upload completion progress for a private JPEG upload.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "uploadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadProgressResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          }
+        }
+      }
+    },
+    "/catalog/cameras": {
+      "get": {
+        "operationId": "listCatalogCameras",
+        "summary": "List P0 camera bodies.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versioned P0 camera catalog.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CameraCatalogResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          }
+        }
+      }
+    },
+    "/catalog/lenses": {
+      "get": {
+        "operationId": "listCatalogLenses",
+        "summary": "List P0 lenses, optionally filtered by brand.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "brand",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Sony",
+                "Nikon",
+                "Canon",
+                "Tamron",
+                "Sigma",
+                "Viltrox"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versioned P0 lens catalog.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LensCatalogResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          }
+        }
+      }
+    },
+    "/catalog/accessories": {
+      "get": {
+        "operationId": "listCatalogAccessoryTypes",
+        "summary": "List P0 accessory types.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versioned P0 accessory catalog.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessoryCatalogResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          }
+        }
+      }
+    },
+    "/catalog/compatibility": {
+      "get": {
+        "operationId": "getCatalogCompatibility",
+        "summary": "Evaluate direct camera and lens compatibility without an adapter.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cameraId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "sony-a6700"
+          },
+          {
+            "in": "query",
+            "name": "lensId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "sigma-18-50-dc-dn"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Direct mount and sensor-format compatibility.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompatibilityResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          },
+          "404": {
+            "description": "Camera or lens catalog ID was not found."
+          }
+        }
+      }
+    },
+    "/equipment": {
+      "get": {
+        "operationId": "listUserEquipment",
+        "summary": "List the authenticated user's private catalog equipment references.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned equipment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserEquipmentListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          }
+        }
+      },
+      "post": {
+        "operationId": "addUserEquipment",
+        "summary": "Add a catalog item to the authenticated user's private equipment collection.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserEquipmentCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Equipment added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserEquipment"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "description": "Authentication required."
+          },
+          "404": {
+            "description": "Catalog item was not found."
+          },
+          "409": {
+            "description": "The catalog item is already owned."
+          }
+        }
+      }
+    },
+    "/equipment/{equipmentId}": {
+      "delete": {
+        "operationId": "removeUserEquipment",
+        "summary": "Remove an owned catalog item from the authenticated user's collection.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "equipmentId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Equipment removed."
+          },
+          "401": {
+            "description": "Authentication required."
+          },
+          "404": {
+            "description": "No owned equipment exists for this identifier."
+          }
+        }
+      }
+    },
+    "/equipment/cameras/{equipmentId}/primary": {
+      "put": {
+        "operationId": "setPrimaryCamera",
+        "summary": "Atomically set an owned camera as the authenticated user's sole primary camera.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "equipmentId",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated primary camera",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserEquipment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The owned item is not a camera."
+          },
+          "401": {
+            "description": "Authentication required."
+          },
+          "404": {
+            "description": "No owned camera exists for this identifier."
+          }
+        }
+      }
+    },
+    "/equipment/body-lens-combinations": {
+      "get": {
+        "operationId": "listExecutableBodyLensCombinations",
+        "summary": "List owned body-lens pairs and flag combinations which cannot be used directly.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evaluated owned combinations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BodyLensCombinationListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          }
+        }
+      }
+    },
+    "/courses": {
+      "get": {
+        "operationId": "listCourses",
+        "summary": "List cached P0 courses without generating new content.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cached courses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Course"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          }
+        }
+      }
+    },
+    "/courses/{courseId}": {
+      "get": {
+        "operationId": "getCourse",
+        "summary": "Open a cached immutable course version.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Course and versioned lessons",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Course"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Course not found"
+          }
+        }
+      }
+    },
+    "/courses/{courseId}/progress": {
+      "get": {
+        "operationId": "getCourseProgress",
+        "summary": "Get progress bound to the opened course content version.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version-bound progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseProgress"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          }
+        }
+      }
+    },
+    "/courses/{courseId}/lessons/{lessonId}/assignments": {
+      "post": {
+        "operationId": "submitLessonAssignment",
+        "summary": "Submit a valid JPEG assignment for lesson-focused AI feedback.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "lessonId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Assignment accepted and lesson feedback started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LessonFeedback"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "responses": {
+      "InvalidRequest": {
+        "description": "Request fields do not satisfy validation rules.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Course": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "category",
+          "contentVersion",
+          "lessons"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "BASICS",
+              "MIRRORLESS",
+              "EQUIPMENT",
+              "MODEL"
+            ]
+          },
+          "contentVersion": {
+            "type": "string"
+          },
+          "lessons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Lesson"
+            }
+          }
+        }
+      },
+      "Lesson": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "objective"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "objective": {
+            "type": "string"
+          }
+        }
+      },
+      "CourseProgress": {
+        "type": "object",
+        "required": [
+          "courseId",
+          "contentVersion",
+          "completedLessons",
+          "totalLessons"
+        ],
+        "properties": {
+          "courseId": {
+            "type": "string"
+          },
+          "contentVersion": {
+            "type": "string"
+          },
+          "completedLessons": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalLessons": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "AssignmentRequest": {
+        "type": "object",
+        "required": [
+          "mediaId"
+        ],
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "LessonFeedback": {
+        "type": "object",
+        "required": [
+          "lessonObjective",
+          "feedbackTaskId",
+          "progress"
+        ],
+        "properties": {
+          "lessonObjective": {
+            "type": "string"
+          },
+          "feedbackTaskId": {
+            "type": "string"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/CourseProgress"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "username",
+          "email",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 32
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 8,
+            "maxLength": 64
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "identifier",
+          "password"
+        ],
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 254
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "refreshToken"
+        ],
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "format": "password",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "newPassword": {
+            "type": "string",
+            "format": "password",
+            "minLength": 8,
+            "maxLength": 64
+          }
+        }
+      },
+      "AccountDeletionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "currentPassword"
+        ],
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "format": "password",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      },
+      "AccountDeletionJob": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jobId",
+          "state",
+          "deletionTokenExpiresAt"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "FAILED"
+            ]
+          },
+          "failureReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "deletionToken": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Returned only once when the authenticated request creates the job. It permits status and retry only for this job."
+          },
+          "deletionTokenExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SessionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "expiresIn"
+        ],
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "AiTaskState": {
+        "type": "string",
+        "enum": [
+          "QUEUED",
+          "RUNNING",
+          "SUCCEEDED",
+          "FAILED",
+          "CANCELLED"
+        ]
+      },
+      "AiTaskCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operationType",
+          "input"
+        ],
+        "properties": {
+          "operationType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "input": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "AiTaskCreated": {
+        "type": "object",
+        "required": [
+          "taskId",
+          "state"
+        ],
+        "properties": {
+          "taskId": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/AiTaskState"
+          }
+        }
+      },
+      "AiTaskStatus": {
+        "type": "object",
+        "required": [
+          "taskId",
+          "state",
+          "trace"
+        ],
+        "properties": {
+          "taskId": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/AiTaskState"
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "trace": {
+            "$ref": "#/components/schemas/AiTaskTrace"
+          }
+        }
+      },
+      "AiTaskTrace": {
+        "type": "object",
+        "required": [
+          "workflowVersion",
+          "modelId",
+          "promptVersion",
+          "ruleVersion",
+          "schemaVersion"
+        ],
+        "properties": {
+          "workflowVersion": {
+            "type": "string"
+          },
+          "modelId": {
+            "type": "string"
+          },
+          "promptVersion": {
+            "type": "string"
+          },
+          "ruleVersion": {
+            "type": "string"
+          },
+          "schemaVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "AiTaskEvent": {
+        "type": "object",
+        "required": [
+          "taskId",
+          "state"
+        ],
+        "properties": {
+          "taskId": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/AiTaskState"
+          }
+        }
+      },
+      "SceneAnalysisRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "environmentMediaId",
+          "subjectType",
+          "subject",
+          "targetStyle",
+          "timeConstraintMinutes",
+          "equipmentIds"
+        ],
+        "properties": {
+          "environmentMediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subjectType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "targetStyle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "timeConstraintMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "equipmentIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "ShootingPlanRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sceneAnalysisId"
+        ],
+        "properties": {
+          "sceneAnalysisId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ShootingPlan": {
+        "type": "object",
+        "required": [
+          "label",
+          "recommended",
+          "position",
+          "distance",
+          "cameraHeight",
+          "orientation",
+          "focalLengthMm",
+          "exposure",
+          "metering",
+          "focus",
+          "driveMode",
+          "whiteBalance",
+          "composition",
+          "pose",
+          "accessoryUse",
+          "steps"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "enum": [
+              "SAFE",
+              "ATMOSPHERIC",
+              "CREATIVE"
+            ]
+          },
+          "recommended": {
+            "type": "boolean"
+          },
+          "position": {
+            "type": "string"
+          },
+          "distance": {
+            "type": "string"
+          },
+          "cameraHeight": {
+            "type": "string"
+          },
+          "orientation": {
+            "type": "string"
+          },
+          "focalLengthMm": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "exposure": {
+            "type": "object",
+            "required": [
+              "aperture",
+              "shutterSpeed",
+              "iso",
+              "startingPoint"
+            ],
+            "properties": {
+              "aperture": {
+                "type": "string"
+              },
+              "shutterSpeed": {
+                "type": "string"
+              },
+              "iso": {
+                "type": "integer"
+              },
+              "startingPoint": {
+                "type": "boolean",
+                "const": true
+              }
+            }
+          },
+          "metering": {
+            "type": "string"
+          },
+          "focus": {
+            "type": "string"
+          },
+          "driveMode": {
+            "type": "string"
+          },
+          "whiteBalance": {
+            "type": "string"
+          },
+          "composition": {
+            "type": "string"
+          },
+          "pose": {
+            "type": "string"
+          },
+          "accessoryUse": {
+            "type": "string"
+          },
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ReferenceImageRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "environmentMediaId",
+          "shootingPlanId",
+          "selectedPlan"
+        ],
+        "properties": {
+          "environmentMediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shootingPlanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "selectedPlan": {
+            "$ref": "#/components/schemas/ShootingPlan"
+          }
+        }
+      },
+      "PhotoEvaluationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mediaId"
+        ],
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "intent": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "reanalyze": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ShootingSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "shootingPlanId",
+          "planContext"
+        ],
+        "properties": {
+          "shootingPlanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planContext": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        }
+      },
+      "ShootingSession": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "shootingPlanId",
+          "planContext"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shootingPlanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planContext": {
+            "type": "string"
+          }
+        }
+      },
+      "RetakeComparisonRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "originalEvaluationId",
+          "retakeEvaluationId"
+        ],
+        "properties": {
+          "originalEvaluationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "retakeEvaluationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "RetakeComparison": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "original",
+          "retake",
+          "scoreDelta",
+          "dimensionChanges",
+          "compositionChanges",
+          "parameterChanges",
+          "improvedProblems",
+          "remainingProblems",
+          "nextPracticeAdvice"
+        ],
+        "properties": {
+          "original": {
+            "$ref": "#/components/schemas/RetakeWorkSnapshot"
+          },
+          "retake": {
+            "$ref": "#/components/schemas/RetakeWorkSnapshot"
+          },
+          "scoreDelta": {
+            "type": "integer"
+          },
+          "dimensionChanges": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "compositionChanges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "parameterChanges": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": [
+                "before",
+                "after"
+              ],
+              "properties": {
+                "before": {
+                  "type": "string"
+                },
+                "after": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "improvedProblems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "remainingProblems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nextPracticeAdvice": {
+            "type": "string"
+          }
+        }
+      },
+      "RetakeWorkSnapshot": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mediaId",
+          "score"
+        ],
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "PortfolioWorkPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioWork"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PortfolioWork": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mediaId",
+          "width",
+          "height",
+          "favorite",
+          "availability"
+        ],
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "camera": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lens": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "favorite": {
+            "type": "boolean"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/PortfolioAvailability"
+          }
+        }
+      },
+      "PortfolioWorkDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PortfolioWork"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "exif": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "evaluation": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": true
+              },
+              "sourcePlan": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": true
+              },
+              "retake": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        ]
+      },
+      "PortfolioAvailability": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "exif",
+          "evaluation",
+          "sourcePlan",
+          "retake"
+        ],
+        "properties": {
+          "exif": {
+            "type": "boolean"
+          },
+          "evaluation": {
+            "type": "boolean"
+          },
+          "sourcePlan": {
+            "type": "boolean"
+          },
+          "retake": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PortfolioFavoriteRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "favorite"
+        ],
+        "properties": {
+          "favorite": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PortfolioFavorite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mediaId",
+          "favorite"
+        ],
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "favorite": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PortfolioWorkDeletionJob": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jobId",
+          "mediaId",
+          "state"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "FAILED"
+            ]
+          },
+          "failureReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          }
+        }
+      },
+      "MediaResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "width",
+          "height",
+          "contentHash",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "contentHash": {
+            "type": "string",
+            "description": "SHA-256 hash of the original JPEG."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETED"
+            ]
+          },
+          "exif": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Allowed photography metadata only; never GPS."
+          }
+        }
+      },
+      "UploadProgressResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "uploadId",
+          "status",
+          "progress"
+        ],
+        "properties": {
+          "uploadId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETED"
+            ]
+          },
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      },
+      "Camera": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "brand",
+          "model",
+          "mount",
+          "sensorFormat"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "sony-a6700"
+          },
+          "brand": {
+            "type": "string",
+            "example": "Sony"
+          },
+          "model": {
+            "type": "string",
+            "example": "α6700"
+          },
+          "mount": {
+            "type": "string",
+            "example": "E"
+          },
+          "sensorFormat": {
+            "type": "string",
+            "enum": [
+              "APS_C",
+              "FULL_FRAME"
+            ],
+            "example": "APS_C"
+          }
+        }
+      },
+      "Lens": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "brand",
+          "model",
+          "mount",
+          "focalLengthMinMm",
+          "focalLengthMaxMm",
+          "maximumAperture",
+          "sensorFormat"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "sigma-18-50-dc-dn"
+          },
+          "brand": {
+            "type": "string",
+            "example": "Sigma"
+          },
+          "model": {
+            "type": "string",
+            "example": "18-50mm F2.8 DC DN"
+          },
+          "mount": {
+            "type": "string",
+            "example": "E"
+          },
+          "focalLengthMinMm": {
+            "type": "integer",
+            "example": 18
+          },
+          "focalLengthMaxMm": {
+            "type": "integer",
+            "example": 50
+          },
+          "maximumAperture": {
+            "type": "number",
+            "format": "float",
+            "example": 2.8
+          },
+          "sensorFormat": {
+            "type": "string",
+            "enum": [
+              "APS_C",
+              "FULL_FRAME"
+            ],
+            "example": "APS_C"
+          }
+        }
+      },
+      "AccessoryType": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "displayName"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "tripod"
+          },
+          "displayName": {
+            "type": "string",
+            "example": "Tripod"
+          }
+        }
+      },
+      "CameraCatalogResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "items"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "example": "p0-2026-01"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Camera"
+            }
+          }
+        }
+      },
+      "LensCatalogResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "items"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "example": "p0-2026-01"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Lens"
+            }
+          }
+        }
+      },
+      "AccessoryCatalogResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "items"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "example": "p0-2026-01"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessoryType"
+            }
+          }
+        }
+      },
+      "CompatibilityResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cameraId",
+          "lensId",
+          "compatible",
+          "cropModeRequired",
+          "mode"
+        ],
+        "properties": {
+          "cameraId": {
+            "type": "string",
+            "example": "sony-a6700"
+          },
+          "lensId": {
+            "type": "string",
+            "example": "sigma-18-50-dc-dn"
+          },
+          "compatible": {
+            "type": "boolean",
+            "example": true
+          },
+          "cropModeRequired": {
+            "type": "boolean",
+            "example": false
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "NATIVE",
+              "APS_C_CROP",
+              "CROSS_MOUNT"
+            ],
+            "example": "NATIVE"
+          }
+        }
+      },
+      "EquipmentKind": {
+        "type": "string",
+        "enum": [
+          "CAMERA",
+          "LENS",
+          "ACCESSORY"
+        ]
+      },
+      "UserEquipmentCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "catalogItemId"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/EquipmentKind"
+          },
+          "catalogItemId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "nickname": {
+            "type": "string",
+            "maxLength": 64
+          }
+        }
+      },
+      "UserEquipment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "catalogItemId",
+          "primary"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/EquipmentKind"
+          },
+          "catalogItemId": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "primary": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserEquipmentListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserEquipment"
+            }
+          }
+        }
+      },
+      "BodyLensCombination": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cameraEquipmentId",
+          "lensEquipmentId",
+          "compatible",
+          "cropModeRequired",
+          "mode",
+          "defaultEligible"
+        ],
+        "properties": {
+          "cameraEquipmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lensEquipmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "compatible": {
+            "type": "boolean"
+          },
+          "cropModeRequired": {
+            "type": "boolean"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "NATIVE",
+              "APS_C_CROP",
+              "CROSS_MOUNT"
+            ]
+          },
+          "defaultEligible": {
+            "type": "boolean",
+            "description": "False for incompatible pairs."
+          }
+        }
+      },
+      "BodyLensCombinationListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BodyLensCombination"
+            }
+          }
+        }
+      }
+    }
+  }
+}
