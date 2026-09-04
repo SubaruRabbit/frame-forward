@@ -1,7 +1,7 @@
 # APP 工程开发规范
 
-> 版本：v1.1.0
-> 生效日期：2026-09-01
+> 版本：v1.2.0
+> 生效日期：2026-09-04
 > 适用范围：iOS、Android、React Native、Flutter 及其他 Hybrid APP
 > 文档性质：团队工程强制规范
 > 上位约束：本仓库项目宪法、Git 宪章及适用的后端工程宪章
@@ -299,7 +299,31 @@ Feature Flag 用于灰度、分群、紧急关闭和分地区启用；功能稳�
 
 Code Review 必须检查业务正确性、架构边界、异常与恢复、安全、性能、可测试性、兼容性、日志和数据隐私，不能只检查格式。
 
-### 15.1 测试分层
+### 15.1 格式化与静态质量配置
+
+APP 工程必须使用受版本控制的 **EditorConfig + Prettier + ESLint** 组合；个人 IDE 设置、全局工具配置或未提交的本地规则不得改变检查结果。三者职责必须分离：
+
+| 工具 | 唯一职责 | 强制要求 |
+| --- | --- | --- |
+| EditorConfig | 编辑器文本基线 | 统一 UTF-8、LF、末尾换行、行尾空格与缩进；JS/TS/JSON/YAML 使用 2 空格，Kotlin/Swift/XML/Gradle 使用 4 空格；Markdown 可保留语义性行尾空格。 |
+| Prettier | APP JavaScript/TypeScript 与结构化文本格式化 | 仅格式化受版本控制的 JS、JSX、TS、TSX、JSON、Markdown、YAML/YML；配置必须显式定义行宽、缩进、引号、分号、尾逗号、括号空格和 LF。 |
+| ESLint | 代码质量、React Native 规则与静态缺陷检查 | 必须以项目声明的 React Native 基线为基础；`eslint-config-prettier` 必须置于继承链最后以关闭格式冲突规则，且不得以 ESLint 执行 Prettier。 |
+
+Prettier 不得格式化依赖、构建产物、覆盖率产物、iOS/Android 原生工程文件、生成代码或第三方代码；这些范围必须由受版本控制的 `.prettierignore` 明确排除。ESLint 忽略范围仅限同类非业务输入，禁止以目录、规则或 warning 降级掩盖业务代码问题。
+
+APP `package.json` 必须提供以下可复现命令：
+
+```text
+npm run format        # 仅开发者显式修复格式
+npm run format:check  # 非修改式 Prettier 检查
+npm run lint          # ESLint，--max-warnings=0
+npm run lint:fix      # 仅开发者显式修复可自动修复的问题
+npm run quality       # format:check → lint → typecheck → Jest（--runInBand --no-watchman）
+```
+
+`format` 与 `lint:fix` 不得在 CI 或未获明确授权的批量变更中执行。历史代码不因引入配置而全量格式化；开发者触及非规范文件时，应将必要的格式化差异与行为修改拆分。任何临时排除必须遵循本规范第 19 节的书面、限期例外流程。
+
+### 15.2 测试分层
 
 测试必须稳定、可重复、可隔离，并可在 CI 中无人值守运行。单元测试不得依赖真实网络、真实系统时间、执行顺序或共享可变状态；外部依赖应通过 Fake、Stub 或可控测试环境隔离。
 
@@ -314,12 +338,12 @@ Code Review 必须检查业务正确性、架构边界、异常与恢复、安�
 
 覆盖率用于发现测试缺口，不能替代断言质量。新增或修改的核心业务分支必须全部有测试；确实不可自动化的场景必须在变更说明中给出人工验证步骤和证据。
 
-### 15.2 持续集成质量门禁
+### 15.3 持续集成质量门禁
 
 以下任一项失败，变更不得合并：
 
 ```text
-Formatter / Lint / 静态分析失败
+`npm run format:check` 或零警告 `npm run lint` 失败
 Type Check 或编译失败
 单元测试或必需的集成测试失败
 架构依赖规则检查失败
@@ -330,6 +354,8 @@ Type Check 或编译失败
 
 禁止通过跳过测试、降低告警级别、扩大忽略规则或删除断言使 CI 变绿。确有误报时，必须采用最小范围抑制并记录原因、负责人和清理条件。
 
+APP 受控 CI 必须在锁文件安装依赖后执行 `npm run quality`；任一子命令失败均须阻断合并。CI 使用的 Node 主版本必须与 `package.json#engines` 一致，工作目录必须明确为 `frame-forward-app`。
+
 ## 16. 兼容、迁移与发布
 
 实现必须考虑旧 APP/新 APP、旧 API/新 API、旧数据/新数据并存。API、数据库、存储、Route 或公共接口的破坏性变更必须标记 `BREAKING CHANGE`，提供迁移、兼容窗口和回滚方案。
@@ -339,7 +365,7 @@ Type Check 或编译失败
 正式版本发布前必须完成：
 
 ```text
-规格验收 → Code Review → Formatter/Lint/静态分析/Type Check
+规格验收 → Code Review → `format:check`/零警告 `lint`/静态分析/Type Check
 → Unit/Integration Test → Build → Smoke Test → 回归测试
 → 发布检查 → 灰度 → 监控确认
 ```
@@ -358,7 +384,7 @@ AI 是实现工具，不是架构和业务决策主体。AI 开始工作前必�
 
 AI 不得编造 API、业务规则或 SDK 行为，不得以 TODO、空方法、伪代码或假 API 替代真实实现。完成后必须执行适用的 Formatter、Lint、静态分析、Type Check、Build 和测试；无法执行时必须在交付说明中明确未验证项目。
 
-AI 修改既有实现时必须先确认工作区状态并保护用户未提交变更。不得擅自删除、覆盖、回滚或格式化任务范围之外的文件；不得为了通过检查而降低门禁。
+AI 修改既有实现时必须先确认工作区状态并保护用户未提交变更。不得擅自删除、覆盖、回滚或格式化任务范围之外的文件；不得为了通过检查而降低门禁。AI 必须以 `npm run quality` 验证 APP 质量；配置引入或迁移期间不得用 `format` 或 `lint:fix` 批量改写无关源码。
 
 ## 18. Definition of Done
 
@@ -371,7 +397,7 @@ AI 修改既有实现时必须先确认工作区状态并保护用户未提交�
 [ ] 权限、重复点击、弱网和生命周期场景完成
 [ ] 安全、日志、埋点和隐私检查完成
 [ ] 必要的单元、集成、组件或 E2E 测试完成并稳定通过
-[ ] Formatter、Lint、静态分析、Type Check、Build 通过
+[ ] `npm run quality`、静态分析与适用的 Build 通过
 [ ] 兼容性、迁移和回滚方案已确认
 [ ] Code Review 与验收完成
 [ ] 发布后监控指标和负责人已明确
@@ -399,6 +425,12 @@ AI 修改既有实现时必须先确认工作区状态并保护用户未提交�
 同一人可以承担多个角色，但关键业务的实现者不得成为唯一审批者。
 
 ## 21. 版本记录
+
+### v1.2.0（2026-09-04）
+
+- 新增 EditorConfig、Prettier 与 ESLint 的唯一职责、受版本控制配置范围及原生/生成文件排除规则。
+- 规定 Prettier 与 ESLint 分离执行、ESLint 零警告、`npm run quality` 质量顺序及锁文件 CI 阻断门禁。
+- 明确格式化迁移不得夹带全量源码改写，例外必须经过限期书面审批。
 
 ### v1.1.0（2026-09-01）
 
