@@ -18,14 +18,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.frameforward.ai.RetakeComparisonGraph;
 import com.frameforward.auth.AuthService;
 import com.frameforward.media.MediaEntity;
-import com.frameforward.media.MediaMapper;
+import com.frameforward.media.MediaManager;
 
 class RetakeComparisonServiceTest {
     private final AuthService auth = mock(AuthService.class);
     private final PhotoEvaluationMapper evaluations = mock(PhotoEvaluationMapper.class);
     private final RetakeLinkMapper links = mock(RetakeLinkMapper.class);
     private final ShootingSessionMapper sessions = mock(ShootingSessionMapper.class);
-    private final MediaMapper media = mock(MediaMapper.class);
+    private final MediaManager media = mock(MediaManager.class);
     private final RetakeComparisonGraph graph = mock(RetakeComparisonGraph.class);
     private final RetakeComparisonService service = new RetakeComparisonService(auth, evaluations, links, sessions,
             media, graph, new ObjectMapper());
@@ -80,7 +80,7 @@ class RetakeComparisonServiceTest {
         when(evaluations.selectOne(any())).thenReturn(original, retake);
         when(sessions.selectOne(any())).thenReturn(session);
         when(sessions.selectById("session-1")).thenReturn(session);
-        when(media.selectById(any())).thenReturn(photo);
+        when(media.findById(any())).thenReturn(photo);
         when(graph.summarize(any(), any())).thenReturn(Map.of("summary", "generated"));
     }
 

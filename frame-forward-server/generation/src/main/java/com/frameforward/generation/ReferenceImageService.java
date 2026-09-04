@@ -12,18 +12,18 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.frameforward.ai.AiTaskRuntime;
 import com.frameforward.auth.AuthService;
 import com.frameforward.media.MediaEntity;
-import com.frameforward.media.MediaMapper;
+import com.frameforward.media.MediaManager;
 import com.frameforward.shooting.ShootingPlanEntity;
 import com.frameforward.shooting.ShootingPlanMapper;
 
 @Service
 public class ReferenceImageService {
     private final AuthService auth;
-    private final MediaMapper media;
+    private final MediaManager media;
     private final ShootingPlanMapper plans;
     private final ReferenceImageMapper references;
     private final AiTaskRuntime tasks;
-    public ReferenceImageService(AuthService auth, MediaMapper media, ShootingPlanMapper plans,
+    public ReferenceImageService(AuthService auth, MediaManager media, ShootingPlanMapper plans,
             ReferenceImageMapper references, AiTaskRuntime tasks) {
         this.auth = auth;
         this.media = media;
@@ -35,8 +35,7 @@ public class ReferenceImageService {
     public AiTaskRuntime.Created create(String token, String key, Request request) {
         validate(request);
         String account = auth.requireAccountId(token);
-        MediaEntity scene = media.selectOne(new LambdaQueryWrapper<MediaEntity>()
-                .eq(MediaEntity::getId, request.environmentMediaId).eq(MediaEntity::getOwnerId, account));
+        MediaEntity scene = media.findOwned(account, request.environmentMediaId);
         ShootingPlanEntity plan = plans.selectOne(new LambdaQueryWrapper<ShootingPlanEntity>()
                 .eq(ShootingPlanEntity::getId, request.shootingPlanId).eq(ShootingPlanEntity::getAccountId, account));
         if (scene == null || plan == null)

@@ -15,11 +15,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.frameforward.ai.AiTaskRuntime;
 import com.frameforward.auth.AuthService;
 import com.frameforward.media.MediaEntity;
-import com.frameforward.media.MediaMapper;
+import com.frameforward.media.MediaManager;
 
 class PhotoEvaluationServiceTest {
     private final AuthService auth = mock(AuthService.class);
-    private final MediaMapper media = mock(MediaMapper.class);
+    private final MediaManager media = mock(MediaManager.class);
     private final PhotoEvaluationMapper evaluations = mock(PhotoEvaluationMapper.class);
     private final ShootingSessionMapper sessions = mock(ShootingSessionMapper.class);
     private final AiTaskRuntime tasks = mock(AiTaskRuntime.class);
@@ -34,7 +34,7 @@ class PhotoEvaluationServiceTest {
         photo.exifJson = "{}";
         AiTaskRuntime.Created created = new AiTaskRuntime.Created("task-1", AiTaskRuntime.State.QUEUED);
         when(auth.requireAccountId("token")).thenReturn("account-1");
-        when(media.selectOne(any())).thenReturn(photo);
+        when(media.findOwned("account-1", "media-1")).thenReturn(photo);
         when(evaluations.selectOne(any())).thenReturn(null);
         when(tasks.create(any(), any(), any())).thenReturn(created);
 
@@ -51,7 +51,7 @@ class PhotoEvaluationServiceTest {
     @Test
     void rejectsRequestForMissingPhoto() {
         when(auth.requireAccountId("token")).thenReturn("account-1");
-        when(media.selectOne(any())).thenReturn(null);
+        when(media.findOwned("account-1", "missing")).thenReturn(null);
 
         assertThrows(PhotoEvaluationService.NotFound.class, () -> service.create("token", "key", request("missing")));
 
@@ -65,7 +65,7 @@ class PhotoEvaluationServiceTest {
         PhotoEvaluationEntity cached = new PhotoEvaluationEntity();
         cached.aiTaskId = "cached-task";
         when(auth.requireAccountId("token")).thenReturn("account-1");
-        when(media.selectOne(any())).thenReturn(photo);
+        when(media.findOwned("account-1", "media-1")).thenReturn(photo);
         when(evaluations.selectOne(any())).thenReturn(cached);
 
         assertEquals(new AiTaskRuntime.Created("cached-task", AiTaskRuntime.State.QUEUED),

@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.frameforward.ai.AiTaskRuntime;
 import com.frameforward.auth.AuthService;
 import com.frameforward.equipment.UserEquipmentService;
-import com.frameforward.media.MediaMapper;
+import com.frameforward.media.MediaManager;
 
 class SceneAnalysisServiceTest {
     @Test
@@ -47,7 +47,7 @@ class SceneAnalysisServiceTest {
     }
 
     private static SceneAnalysisService service(AuthService auth) {
-        return new SceneAnalysisService(auth, mock(MediaMapper.class), mock(UserEquipmentService.class),
+        return new SceneAnalysisService(auth, mock(MediaManager.class), mock(UserEquipmentService.class),
                 mock(AiTaskRuntime.class), mock(SceneAnalysisMapper.class), new ObjectMapper());
     }
 

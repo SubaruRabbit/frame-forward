@@ -15,18 +15,18 @@ import com.frameforward.ai.AiTaskRuntime;
 import com.frameforward.auth.AuthService;
 import com.frameforward.equipment.UserEquipmentService;
 import com.frameforward.media.MediaEntity;
-import com.frameforward.media.MediaMapper;
+import com.frameforward.media.MediaManager;
 
 @Service
 public class SceneAnalysisService {
     private final AuthService auth;
-    private final MediaMapper media;
+    private final MediaManager media;
     private final UserEquipmentService equipment;
     private final AiTaskRuntime tasks;
     private final SceneAnalysisMapper analyses;
     private final ObjectMapper json;
 
-    public SceneAnalysisService(AuthService auth, MediaMapper media, UserEquipmentService equipment,
+    public SceneAnalysisService(AuthService auth, MediaManager media, UserEquipmentService equipment,
             AiTaskRuntime tasks, SceneAnalysisMapper analyses, ObjectMapper json) {
         this.auth = auth;
         this.media = media;
@@ -40,8 +40,7 @@ public class SceneAnalysisService {
     public AiTaskRuntime.Created create(String accessToken, String key, Request request) {
         validate(request);
         String accountId = auth.requireAccountId(accessToken);
-        MediaEntity ownedMedia = media.selectOne(new LambdaQueryWrapper<MediaEntity>()
-                .eq(MediaEntity::getId, request.environmentMediaId).eq(MediaEntity::getOwnerId, accountId));
+        MediaEntity ownedMedia = media.findOwned(accountId, request.environmentMediaId);
         if (ownedMedia == null)
             throw new MediaNotOwned();
         List<UserEquipmentService.Item> ownedEquipment = equipment.list(accountId).stream()

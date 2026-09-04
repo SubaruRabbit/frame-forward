@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.frameforward.ai.RetakeComparisonGraph;
 import com.frameforward.auth.AuthService;
 import com.frameforward.media.MediaEntity;
-import com.frameforward.media.MediaMapper;
+import com.frameforward.media.MediaManager;
 
 @Service
 public class RetakeComparisonService {
@@ -20,11 +20,11 @@ public class RetakeComparisonService {
     private final PhotoEvaluationMapper evaluations;
     private final RetakeLinkMapper links;
     private final ShootingSessionMapper sessions;
-    private final MediaMapper media;
+    private final MediaManager media;
     private final RetakeComparisonGraph graph;
     private final ObjectMapper json;
     public RetakeComparisonService(AuthService auth, PhotoEvaluationMapper evaluations, RetakeLinkMapper links,
-            ShootingSessionMapper sessions, MediaMapper media, RetakeComparisonGraph graph, ObjectMapper json) {
+            ShootingSessionMapper sessions, MediaManager media, RetakeComparisonGraph graph, ObjectMapper json) {
         this.auth = auth;
         this.evaluations = evaluations;
         this.links = links;
@@ -113,7 +113,7 @@ public class RetakeComparisonService {
         return result;
     }
     private Map<String, Object> exif(String mediaId) {
-        MediaEntity item = media.selectById(mediaId);
+        MediaEntity item = media.findById(mediaId);
         return item == null || blank(item.exifJson) ? Map.of() : read(item.exifJson);
     }
     private PhotoEvaluationEntity owned(String account, String id) {

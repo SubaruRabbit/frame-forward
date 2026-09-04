@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifIFD0Directory;
@@ -30,10 +29,10 @@ import com.frameforward.auth.AccountDataCleanup;
 @Primary
 public class MediaService implements WorkMediaCleanup, AccountDataCleanup {
     static final long MAX_BYTES = 50L * 1024 * 1024;
-    private final MediaMapper media;
+    private final MediaManager media;
     private final Path root;
     private final ObjectMapper json = new ObjectMapper();
-    public MediaService(MediaMapper media, @Value("${frame-forward.media.storage-root:./var/media}") String root) {
+    public MediaService(MediaManager media, @Value("${frame-forward.media.storage-root:./var/media}") String root) {
         this.media = media;
         this.root = Paths.get(root).toAbsolutePath().normalize();
     }
@@ -77,8 +76,7 @@ public class MediaService implements WorkMediaCleanup, AccountDataCleanup {
         return temporary;
     }
     private MediaEntity findExisting(String ownerId, String hash) {
-        return media.selectOne(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getOwnerId, ownerId)
-                .eq(MediaEntity::getContentHash, hash));
+        return media.findExisting(ownerId, hash);
     }
     private MediaEntity storeDecodedMedia(String ownerId, String hash, Path temporary) throws Exception {
         BufferedImage decoded = readJpeg(temporary);
@@ -89,7 +87,7 @@ public class MediaService implements WorkMediaCleanup, AccountDataCleanup {
         Path sanitized = writeSanitizedCopy(corrected, id);
         MediaEntity saved = new MediaEntity(id, ownerId, hash, corrected.getWidth(), corrected.getHeight(),
                 original.toString(), sanitized.toString(), allowedExif(metadata));
-        media.insert(saved);
+        media.save(saved);
         return saved;
     }
     private static BufferedImage readJpeg(Path temporary) throws IOException {
@@ -121,8 +119,7 @@ public class MediaService implements WorkMediaCleanup, AccountDataCleanup {
         return sanitized;
     }
     public MediaResponse get(String ownerId, String id) {
-        var item = media.selectOne(
-                new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getId, id).eq(MediaEntity::getOwnerId, ownerId));
+        var item = media.findOwned(ownerId, id);
         if (item == null)
             throw new NotFoundException();
         return response(item);
@@ -133,7 +130,7 @@ public class MediaService implements WorkMediaCleanup, AccountDataCleanup {
         String hash = UUID.nameUUIDFromBytes(imageUrl.getBytes(java.nio.charset.StandardCharsets.UTF_8)).toString()
                 .replace("-", "");
         MediaEntity generated = new MediaEntity(id, ownerId, hash, width, height, imageUrl, imageUrl, "{}");
-        media.insert(generated);
+        media.save(generated);
         return response(generated);
     }
     public UploadProgress progress(String ownerId, String id) {
@@ -142,22 +139,20 @@ public class MediaService implements WorkMediaCleanup, AccountDataCleanup {
     }
     @Override
     public void deleteForWork(String ownerId, String id) {
-        var item = media.selectOne(
-                new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getId, id).eq(MediaEntity::getOwnerId, ownerId));
+        var item = media.findOwned(ownerId, id);
         if (item == null)
             return;
         try {
             deleteStoredFile(item.originalPath);
             deleteStoredFile(item.aiCopyPath);
-            media.deleteById(item.id);
+            media.delete(item.id);
         } catch (IOException exception) {
             throw new CleanupFailedException(exception);
         }
     }
     @Override
     public void deleteForAccount(String accountId) {
-        media.selectList(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getOwnerId, accountId))
-                .forEach(item -> deleteForWork(accountId, item.id));
+        media.listOwned(accountId).forEach(item -> deleteForWork(accountId, item.id));
     }
     private void deleteStoredFile(String value) throws IOException {
         if (value == null || value.isBlank() || value.contains("://"))

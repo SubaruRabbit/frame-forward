@@ -21,7 +21,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
 
 class MediaServiceTest {
-    private final MediaService service = new MediaService(mock(MediaMapper.class), "target/test-media");
+    private final MediaService service = new MediaService(mock(MediaManager.class), "target/test-media");
     @Test
     void rejectsCorruptJpeg() {
         var file = new MockMultipartFile("file", "bad.jpg", "image/jpeg", "not a jpeg".getBytes());
@@ -35,13 +35,13 @@ class MediaServiceTest {
 
     @Test
     void storesOriginalAndSanitizedCopiesForADecodedJpeg(@TempDir Path root) throws Exception {
-        MediaMapper mapper = mock(MediaMapper.class);
+        MediaManager manager = mock(MediaManager.class);
         var file = new MockMultipartFile("file", "photo.jpg", "image/jpeg", jpeg(12, 8));
 
-        MediaService.MediaResponse response = new MediaService(mapper, root.toString()).ingest("owner", file);
+        MediaService.MediaResponse response = new MediaService(manager, root.toString()).ingest("owner", file);
 
         ArgumentCaptor<MediaEntity> saved = ArgumentCaptor.forClass(MediaEntity.class);
-        verify(mapper).insert(saved.capture());
+        verify(manager).save(saved.capture());
         assertEquals(saved.getValue().id, response.id());
         assertEquals(12, response.width());
         assertEquals(8, response.height());
@@ -50,9 +50,9 @@ class MediaServiceTest {
     }
     @Test
     void cannotFetchAnotherOwnersMedia() {
-        MediaMapper mapper = mock(MediaMapper.class);
-        MediaService owned = new MediaService(mapper, "target/test-media");
-        when(mapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(null);
+        MediaManager manager = mock(MediaManager.class);
+        MediaService owned = new MediaService(manager, "target/test-media");
+        when(manager.findOwned("different-owner", "media-id")).thenReturn(null);
         assertThrows(MediaService.NotFoundException.class, () -> owned.get("different-owner", "media-id"));
     }
     @Test
@@ -66,37 +66,38 @@ class MediaServiceTest {
     }
     @Test
     void removesOriginalAndDerivativeForOneWorkOnly(@TempDir Path root) throws Exception {
-        MediaMapper mapper = mock(MediaMapper.class);
+        MediaManager manager = mock(MediaManager.class);
         Path original = Files.writeString(root.resolve("original.jpg"), "original");
         Path derivative = Files.writeString(root.resolve("preview.jpg"), "preview");
         Path unrelated = Files.writeString(root.resolve("unrelated.jpg"), "unrelated");
         MediaEntity target = new MediaEntity("target", "owner", "hash", 1, 1, original.toString(),
                 derivative.toString(), "{}");
-        when(mapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(target);
+        when(manager.findOwned("owner", "target")).thenReturn(target);
 
-        new MediaService(mapper, root.toString()).deleteForWork("owner", "target");
+        new MediaService(manager, root.toString()).deleteForWork("owner", "target");
 
         org.junit.jupiter.api.Assertions.assertFalse(Files.exists(original));
         org.junit.jupiter.api.Assertions.assertFalse(Files.exists(derivative));
         org.junit.jupiter.api.Assertions.assertTrue(Files.exists(unrelated));
-        verify(mapper).deleteById("target");
+        verify(manager).delete("target");
     }
     @Test
     void removesEveryOwnedFileWithoutTouchingAnotherAccount(@TempDir Path root) throws Exception {
-        MediaMapper mapper = mock(MediaMapper.class);
+        MediaManager manager = mock(MediaManager.class);
         Path first = Files.writeString(root.resolve("first.jpg"), "first"),
                 second = Files.writeString(root.resolve("second.jpg"), "second"),
                 shared = Files.writeString(root.resolve("shared.jpg"), "shared");
         MediaEntity one = new MediaEntity("one", "owner", "one", 1, 1, first.toString(), first.toString(), "{}"),
                 two = new MediaEntity("two", "owner", "two", 1, 1, second.toString(), second.toString(), "{}");
-        when(mapper.selectList(org.mockito.ArgumentMatchers.any())).thenReturn(List.of(one, two));
-        when(mapper.selectOne(org.mockito.ArgumentMatchers.any())).thenReturn(one, two);
-        new MediaService(mapper, root.toString()).deleteForAccount("owner");
+        when(manager.listOwned("owner")).thenReturn(List.of(one, two));
+        when(manager.findOwned("owner", "one")).thenReturn(one);
+        when(manager.findOwned("owner", "two")).thenReturn(two);
+        new MediaService(manager, root.toString()).deleteForAccount("owner");
         org.junit.jupiter.api.Assertions.assertFalse(Files.exists(first));
         org.junit.jupiter.api.Assertions.assertFalse(Files.exists(second));
         org.junit.jupiter.api.Assertions.assertTrue(Files.exists(shared));
-        verify(mapper).deleteById("one");
-        verify(mapper).deleteById("two");
+        verify(manager).delete("one");
+        verify(manager).delete("two");
     }
 
     private static byte[] jpeg(int width, int height) throws Exception {

@@ -9,17 +9,18 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.frameforward.ai.AiTaskRuntime;
 import com.frameforward.auth.AuthService;
-import com.frameforward.media.*;
+import com.frameforward.media.MediaEntity;
+import com.frameforward.media.MediaManager;
 @Service
 public class PhotoEvaluationService {
     private static final String RULE = "v1";
     private final AuthService auth;
-    private final MediaMapper media;
+    private final MediaManager media;
     private final PhotoEvaluationMapper evaluations;
     private final ShootingSessionMapper sessions;
     private final AiTaskRuntime tasks;
     private final ObjectMapper json;
-    public PhotoEvaluationService(AuthService auth, MediaMapper media, PhotoEvaluationMapper evaluations,
+    public PhotoEvaluationService(AuthService auth, MediaManager media, PhotoEvaluationMapper evaluations,
             ShootingSessionMapper sessions, AiTaskRuntime tasks, ObjectMapper json) {
         this.auth = auth;
         this.media = media;
@@ -46,8 +47,7 @@ public class PhotoEvaluationService {
             throw new Invalid();
     }
     private MediaEntity findOwnedPhoto(String account, String mediaId) {
-        MediaEntity photo = media.selectOne(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getId, mediaId)
-                .eq(MediaEntity::getOwnerId, account));
+        MediaEntity photo = media.findOwned(account, mediaId);
         if (photo == null)
             throw new NotFound();
         return photo;

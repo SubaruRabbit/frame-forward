@@ -5,29 +5,26 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** 为作品集提供已授权媒体的只读投影，避免跨模块访问媒体表。 */
 @Component
 public class PortfolioMediaQuery {
-    private final MediaMapper media;
+    private final MediaManager media;
     private final ObjectMapper json;
 
-    public PortfolioMediaQuery(MediaMapper media, ObjectMapper json) {
+    public PortfolioMediaQuery(MediaManager media, ObjectMapper json) {
         this.media = media;
         this.json = json;
     }
 
     public List<Item> listOwned(String accountId) {
-        return media.selectList(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getOwnerId, accountId)
-                .orderByDesc(MediaEntity::getId)).stream().map(this::item).toList();
+        return media.listOwnedDescending(accountId).stream().map(this::item).toList();
     }
 
     public Item findOwned(String accountId, String mediaId) {
-        MediaEntity entity = media.selectOne(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getId, mediaId)
-                .eq(MediaEntity::getOwnerId, accountId));
+        MediaEntity entity = media.findOwned(accountId, mediaId);
         return entity == null ? null : item(entity);
     }
 

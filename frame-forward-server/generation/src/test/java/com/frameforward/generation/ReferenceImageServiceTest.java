@@ -21,13 +21,13 @@ import org.mockito.ArgumentCaptor;
 import com.frameforward.ai.AiTaskRuntime;
 import com.frameforward.auth.AuthService;
 import com.frameforward.media.MediaEntity;
-import com.frameforward.media.MediaMapper;
+import com.frameforward.media.MediaManager;
 import com.frameforward.shooting.ShootingPlanEntity;
 import com.frameforward.shooting.ShootingPlanMapper;
 
 class ReferenceImageServiceTest {
     private final AuthService auth = mock(AuthService.class);
-    private final MediaMapper media = mock(MediaMapper.class);
+    private final MediaManager media = mock(MediaManager.class);
     private final ShootingPlanMapper plans = mock(ShootingPlanMapper.class);
     private final ReferenceImageMapper references = mock(ReferenceImageMapper.class);
     private final AiTaskRuntime tasks = mock(AiTaskRuntime.class);
@@ -42,7 +42,7 @@ class ReferenceImageServiceTest {
         plan.id = "plan-1";
         AiTaskRuntime.Created created = new AiTaskRuntime.Created("task-1", AiTaskRuntime.State.QUEUED);
         when(auth.requireAccountId("token")).thenReturn("account-1");
-        when(media.selectOne(any())).thenReturn(scene);
+        when(media.findOwned("account-1", "media-1")).thenReturn(scene);
         when(plans.selectOne(any())).thenReturn(plan);
         when(tasks.create(any(), any(), any())).thenReturn(created);
         when(references.selectOne(any())).thenReturn(null);
