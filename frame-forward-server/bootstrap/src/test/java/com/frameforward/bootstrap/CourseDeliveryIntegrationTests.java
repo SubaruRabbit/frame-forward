@@ -77,6 +77,19 @@ class CourseDeliveryIntegrationTests {
                 Integer.class));
     }
     @Test
+    void missingCourseDetailReturnsNotFound() throws Exception {
+        var name = "missing" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+        var registration = mvc
+                .perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(
+                                Map.of("username", name, "email", name + "@example.com", "password", "ValidPass1!"))))
+                .andExpect(status().isCreated()).andReturn();
+        var token = json.readTree(registration.getResponse().getContentAsString()).get("accessToken").asText();
+
+        mvc.perform(get("/courses/missing-course").header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+    @Test
     void jpegAssignmentPersistsFeedbackAndUpdatesProgress() throws Exception {
         var name = "assignment" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
         var registration = mvc

@@ -20,9 +20,14 @@ public class CourseController {
         return courses.catalog(AuthController.bearer(authorization));
     }
     @GetMapping("/{courseId}")
-    public CourseCatalog.Course course(@RequestHeader(name = "Authorization", required = false) String authorization,
+    public ResponseEntity<CourseCatalog.Course> course(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
             @PathVariable String courseId) {
-        return courses.course(AuthController.bearer(authorization), courseId);
+        try {
+            return ResponseEntity.ok(courses.course(AuthController.bearer(authorization), courseId));
+        } catch (CourseService.NotFound exception) {
+            return ResponseEntity.notFound().build();
+        }
     }
     @GetMapping("/{courseId}/progress")
     public CourseService.Progress progress(
