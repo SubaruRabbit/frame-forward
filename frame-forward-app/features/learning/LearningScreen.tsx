@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { cachedP0Courses, type Course, type Lesson } from './courseCache';
+import type { LearningUseCases } from './application/LearningUseCases';
+import type { Course, Lesson } from './courseCache';
 
-export function LearningScreen() {
+export function LearningScreen({ useCases }: { useCases: LearningUseCases }) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   useEffect(() => {
-    cachedP0Courses().then(setCourses);
-  }, []);
+    useCases.loadCourses().then(setCourses);
+  }, [useCases]);
   if (lesson)
     return (
       <View testID="lesson-screen">

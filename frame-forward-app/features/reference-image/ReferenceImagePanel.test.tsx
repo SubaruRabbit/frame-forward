@@ -1,15 +1,19 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
+import { createReferenceImageUseCases } from './application/ReferenceImageUseCases';
+import type { ReferenceImagePort } from './application/ReferenceImagePort';
 import { ReferenceImagePanel } from './ReferenceImagePanel';
-import type { NetworkClient } from '../../shared/network/network';
 
 test('shows progress, result disclosures and restores the text plan after a failed generation', async () => {
-  const network = { request: jest.fn(() => new Promise(() => {})) } as unknown as NetworkClient;
+  const port: ReferenceImagePort = {
+    create: jest.fn(() => new Promise(() => {})),
+    getTask: jest.fn(),
+  };
   let tree!: ReturnType<typeof create>;
   await act(async () => {
     tree = create(
       <ReferenceImagePanel
-        network={network}
+        useCases={createReferenceImageUseCases(port)}
         environmentMediaId="scene-media"
         shootingPlanId="plan"
         selectedPlanLabel="SAFE"

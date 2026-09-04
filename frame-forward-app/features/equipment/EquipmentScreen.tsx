@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { NetworkClient } from '../../shared/network/network';
 import { EmptyState, FailureState, LoadingState } from '../../shared/components/ScreenState';
-import { equipmentApi } from './equipmentApi';
-import { EquipmentModel, type EquipmentKind } from './equipmentModel';
+import type { EquipmentUseCases } from './application/EquipmentUseCases';
+import type { EquipmentKind } from './equipmentModel';
 
-export function EquipmentScreen({ network }: { network: NetworkClient }) {
-  const model = useRef<EquipmentModel | null>(null);
+export function EquipmentScreen({ useCases }: { useCases: EquipmentUseCases }) {
+  const model = useRef(useCases.model);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -16,15 +15,14 @@ export function EquipmentScreen({ network }: { network: NetworkClient }) {
     setReady(false);
     setError(null);
     try {
-      model.current = new EquipmentModel(equipmentApi(network));
-      await model.current.restore();
+      await useCases.restore();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '无法加载器材。');
     } finally {
       setReady(true);
       redraw(value => value + 1);
     }
-  }, [network]);
+  }, [useCases]);
   useEffect(() => {
     refresh().catch(() => undefined);
   }, [refresh]);
@@ -33,7 +31,7 @@ export function EquipmentScreen({ network }: { network: NetworkClient }) {
   const current = model.current!;
   const add = async (kind: EquipmentKind, id: string) => {
     try {
-      await current.add(kind, id);
+      await useCases.add(kind, id);
       redraw(value => value + 1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '添加失败。');
@@ -41,7 +39,7 @@ export function EquipmentScreen({ network }: { network: NetworkClient }) {
   };
   const remove = async (id: string) => {
     try {
-      await current.remove(id);
+      await useCases.remove(id);
       setPendingRemoval(null);
       redraw(value => value + 1);
     } catch (cause) {
@@ -50,7 +48,7 @@ export function EquipmentScreen({ network }: { network: NetworkClient }) {
   };
   const makePrimary = async (id: string) => {
     try {
-      await current.setPrimary(id);
+      await useCases.setPrimary(id);
       redraw(value => value + 1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '主力相机切换失败。');

@@ -62,14 +62,21 @@ class SceneAnalysisIntegrationTests {
                 break;
             Thread.sleep(25);
         }
-        mvc.perform(get("/ai/tasks/{id}", taskId).header("Authorization", owner))
+        var completed = mvc.perform(get("/ai/tasks/{id}", taskId).header("Authorization", owner))
                 .andExpect(jsonPath("$.state").value("SUCCEEDED"))
                 .andExpect(jsonPath("$.trace.modelId").value("qwen3.8-max"))
                 .andExpect(jsonPath("$.result.light.quality").value("soft"))
                 .andExpect(jsonPath("$.result.compositionalStructures[0]").value("leading-lines"))
                 .andExpect(jsonPath("$.result.usablePositions.length()").value(1))
                 .andExpect(jsonPath("$.result.usablePositions[0].zone").value("SIDEWALK"))
-                .andExpect(jsonPath("$.result.safetyWarnings[0]").value("检测到车行道，禁止推荐在车道内取景。"));
+                .andExpect(jsonPath("$.result.safetyWarnings[0]").value("检测到车行道，禁止推荐在车道内取景。"))
+                .andExpect(jsonPath("$.result.sceneAnalysisId").isNotEmpty()).andReturn();
+        String sceneAnalysisId = json.readTree(completed.getResponse().getContentAsString())
+                .at("/result/sceneAnalysisId").asText();
+        mvc.perform(post("/shooting-plans").header("Authorization", owner).header("Idempotency-Key", "scene-plan-key")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("sceneAnalysisId", sceneAnalysisId))))
+                .andExpect(status().isAccepted());
     }
 
     private Map<String, Object> request(String mediaId, Map<String, Object> mockOutput) {

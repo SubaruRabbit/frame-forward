@@ -631,7 +631,10 @@ components:
       properties:
         taskId: {type: string}
         state: {$ref: '#/components/schemas/AiTaskState'}
-        result: {type: object, additionalProperties: true}
+        result:
+          type: object
+          additionalProperties: true
+          description: For successful scene-analysis tasks, includes `sceneAnalysisId` as the UUID accepted by `/shooting-plans`.
         errorCode: {type: string}
         trace: {$ref: '#/components/schemas/AiTaskTrace'}
     AiTaskTrace:
@@ -771,6 +774,46 @@ components:
             evaluation: {type: [object, 'null'], additionalProperties: true}
             sourcePlan: {type: [object, 'null'], additionalProperties: true}
             retake: {type: [object, 'null'], additionalProperties: true}
+            workflowContext: {$ref: '#/components/schemas/PortfolioWorkWorkflowContext'}
+    PortfolioWorkWorkflowContext:
+      type: object
+      additionalProperties: false
+      required: [mediaId, evaluation, sourcePlan, session, comparisonCandidates]
+      properties:
+        mediaId: {type: string, format: uuid}
+        evaluation: {$ref: '#/components/schemas/PortfolioEvaluationReference'}
+        sourcePlan: {$ref: '#/components/schemas/PortfolioSourcePlanReference'}
+        session: {$ref: '#/components/schemas/PortfolioSessionReference'}
+        comparisonCandidates: {type: array, items: {$ref: '#/components/schemas/PortfolioEvaluationCandidate'}}
+    PortfolioEvaluationReference:
+      type: [object, 'null']
+      additionalProperties: false
+      required: [evaluationId, sessionId]
+      properties:
+        evaluationId: {type: string, format: uuid}
+        sessionId: {type: [string, 'null'], format: uuid}
+    PortfolioSourcePlanReference:
+      type: [object, 'null']
+      additionalProperties: false
+      required: [shootingPlanId, planContext]
+      properties:
+        shootingPlanId: {type: string, format: uuid}
+        planContext: {type: string}
+    PortfolioSessionReference:
+      type: [object, 'null']
+      additionalProperties: false
+      required: [sessionId, shootingPlanId, planContext]
+      properties:
+        sessionId: {type: string, format: uuid}
+        shootingPlanId: {type: string, format: uuid}
+        planContext: {type: string}
+    PortfolioEvaluationCandidate:
+      type: object
+      additionalProperties: false
+      required: [evaluationId, mediaId]
+      properties:
+        evaluationId: {type: string, format: uuid}
+        mediaId: {type: string, format: uuid}
     PortfolioAvailability:
       type: object
       additionalProperties: false

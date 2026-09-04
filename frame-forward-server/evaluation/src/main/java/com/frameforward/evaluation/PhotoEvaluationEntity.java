@@ -36,4 +36,7 @@ public class PhotoEvaluationEntity {
     public String getSessionId() {
         return sessionId;
     }
+    public String getResultJson() {
+        return resultJson;
+    }
 }

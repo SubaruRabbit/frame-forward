@@ -42,6 +42,11 @@ class ShootingManager {
                 .eq(SceneAnalysisEntity::getId, sceneAnalysisId).eq(SceneAnalysisEntity::getAccountId, accountId));
     }
 
+    SceneAnalysisEntity findSceneForTask(String taskId) {
+        return scenes
+                .selectOne(new LambdaQueryWrapper<SceneAnalysisEntity>().eq(SceneAnalysisEntity::getAiTaskId, taskId));
+    }
+
     void persistPlanIfAbsent(String accountId, SceneAnalysisEntity scene, String taskId, String sceneSnapshotJson) {
         if (plans.selectOne(
                 new LambdaQueryWrapper<ShootingPlanEntity>().eq(ShootingPlanEntity::getAiTaskId, taskId)) != null) {

@@ -72,6 +72,7 @@ public class PortfolioService {
         response.put("evaluation", detail.evaluation());
         response.put("sourcePlan", detail.sourcePlan());
         response.put("retake", detail.retake());
+        response.put("workflowContext", detail.workflowContext());
         return response;
     }
 

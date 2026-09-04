@@ -1,20 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { NetworkClient } from '../../shared/network/network';
-
-type Task = {
-  taskId: string;
-  state: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
-  result?: { imageUrl: string };
-  errorCode?: string;
-};
+import type { ReferenceImageUseCases } from './application/ReferenceImageUseCases';
 export function ReferenceImagePanel({
-  network,
+  useCases,
   environmentMediaId,
   shootingPlanId,
   selectedPlanLabel,
 }: {
-  network: NetworkClient;
+  useCases: ReferenceImageUseCases;
   environmentMediaId: string;
   shootingPlanId: string;
   selectedPlanLabel: string;
@@ -22,15 +15,17 @@ export function ReferenceImagePanel({
   const [state, setState] = useState<'text-plan' | 'loading' | 'result'>('text-plan');
   const [error, setError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const generation = useRef<AbortController | null>(null);
+  useEffect(() => () => generation.current?.abort(), []);
   const generate = async () => {
+    generation.current?.abort();
+    const controller = new AbortController();
+    generation.current = controller;
     setState('loading');
     setError(null);
     try {
-      const task = await network.request<Task>({
-        path: '/reference-images',
-        method: 'POST',
-        headers: { 'Idempotency-Key': `reference-${Date.now()}` },
-        body: JSON.stringify({
+      const task = await useCases.generate(
+        {
           environmentMediaId,
           shootingPlanId,
           selectedPlan: {
@@ -42,28 +37,19 @@ export function ReferenceImagePanel({
             focalLengthMm: 35,
             exposure: { startingPoint: true },
           },
-        }),
-      });
-      await poll(task.taskId);
+        },
+        controller.signal,
+      );
+      if (!controller.signal.aborted && task.result) {
+        setImageUrl(task.result.imageUrl);
+        setState('result');
+      }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '参考图生成失败');
-      setState('text-plan');
-    }
-  };
-  const poll = async (taskId: string) => {
-    const task = await network.request<Task>({ path: `/ai/tasks/${taskId}` });
-    if (task.state === 'SUCCEEDED' && task.result) {
-      setImageUrl(task.result.imageUrl);
-      setState('result');
-      return;
-    }
-    if (task.state === 'FAILED') throw new Error('参考图生成失败，请保留文字方案后重试');
-    setTimeout(() => {
-      poll(taskId).catch(reason => {
+      if (!controller.signal.aborted) {
         setError(reason instanceof Error ? reason.message : '参考图生成失败');
         setState('text-plan');
-      });
-    }, 800);
+      }
+    }
   };
   return (
     <View testID="reference-image-panel" style={styles.box}>

@@ -13,9 +13,11 @@ export type PhotoEvaluation = {
 export function PhotoReview({
   result,
   onReanalyze,
+  reanalyzing = false,
 }: {
   result: PhotoEvaluation;
   onReanalyze: () => void;
+  reanalyzing?: boolean;
 }) {
   return (
     <View testID="photo-review" style={styles.box}>
@@ -47,11 +49,13 @@ export function PhotoReview({
       />
       <Pressable
         accessibilityRole="button"
+        accessibilityState={{ disabled: reanalyzing }}
+        disabled={reanalyzing}
         testID="reanalyze-photo"
         onPress={onReanalyze}
         style={styles.button}
       >
-        <Text style={styles.buttonText}>重新分析</Text>
+        <Text style={styles.buttonText}>{reanalyzing ? '正在重新分析…' : '重新分析'}</Text>
       </Pressable>
     </View>
   );

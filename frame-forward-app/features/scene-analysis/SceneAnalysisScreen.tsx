@@ -1,56 +1,62 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { NetworkClient } from '../../shared/network/network';
-import { createSceneAnalysis, getSceneTask, type SceneResult } from './sceneAnalysisApi';
+import type { SceneAnalysisUseCases } from './application/SceneAnalysisUseCases';
+import type { SceneAnalysisProgress, SceneResult } from './domain/sceneAnalysis';
 
-export function SceneAnalysisScreen({ network }: { network: NetworkClient }) {
+const progressCopy: Record<SceneAnalysisProgress, string> = {
+  queued: '正在排队分析现场…',
+  running: '正在理解光线、空间和构图…',
+};
+
+export function SceneAnalysisScreen({
+  useCases,
+  onCompleted,
+}: {
+  useCases: SceneAnalysisUseCases;
+  onCompleted?: (result: SceneResult) => void;
+}) {
   const [mediaId, setMediaId] = useState('');
   const [subject, setSubject] = useState('');
   const [style, setStyle] = useState('');
   const [progress, setProgress] = useState<string | null>(null);
   const [result, setResult] = useState<SceneResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const analysis = useRef<AbortController | null>(null);
+  useEffect(() => () => analysis.current?.abort(), []);
   const submit = async () => {
     if (!mediaId.trim() || !subject.trim() || !style.trim()) {
       setError('请填写现场照片、拍摄对象和目标风格。');
       return;
     }
+    analysis.current?.abort();
+    const controller = new AbortController();
+    analysis.current = controller;
     setError(null);
     setResult(null);
-    setProgress('正在排队分析现场…');
+    setProgress(progressCopy.queued);
     try {
-      const created = await createSceneAnalysis(network, {
-        environmentMediaId: mediaId.trim(),
-        subjectType: 'CUSTOM',
-        subject: subject.trim(),
-        targetStyle: style.trim(),
-        timeConstraintMinutes: 30,
-        equipmentIds: [],
-      });
-      const poll = async () => {
-        const task = await getSceneTask(network, created.taskId);
-        if (task.state === 'SUCCEEDED' && task.result) {
-          setResult(task.result);
-          setProgress(null);
-          return;
-        }
-        if (task.state === 'FAILED') {
-          setError('现场分析未能生成结构化结果，请重试。');
-          setProgress(null);
-          return;
-        }
-        setProgress(task.state === 'RUNNING' ? '正在理解光线、空间和构图…' : '正在排队分析现场…');
-        setTimeout(() => {
-          poll().catch(reason => {
-            setProgress(null);
-            setError(reason instanceof Error ? reason.message : '现场分析失败，请重试。');
-          });
-        }, 800);
-      };
-      await poll();
+      const scene = await useCases.analyze(
+        {
+          environmentMediaId: mediaId.trim(),
+          subjectType: 'CUSTOM',
+          subject: subject.trim(),
+          targetStyle: style.trim(),
+          timeConstraintMinutes: 30,
+          equipmentIds: [],
+        },
+        nextProgress => setProgress(progressCopy[nextProgress]),
+        controller.signal,
+      );
+      if (!controller.signal.aborted) {
+        setResult(scene);
+        onCompleted?.(scene);
+        setProgress(null);
+      }
     } catch (reason) {
-      setProgress(null);
-      setError(reason instanceof Error ? reason.message : '现场分析失败，请重试。');
+      if (!controller.signal.aborted) {
+        setProgress(null);
+        setError(reason instanceof Error ? reason.message : '现场分析失败，请重试。');
+      }
     }
   };
   return (

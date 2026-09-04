@@ -1,59 +1,21 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import type { NetworkClient } from '../../shared/network/network';
-export type Availability = {
-  exif: boolean;
-  evaluation: boolean;
-  sourcePlan: boolean;
-  retake: boolean;
-};
-export type Work = {
-  mediaId: string;
-  width: number;
-  height: number;
-  subject: string | null;
-  camera: string | null;
-  lens: string | null;
-  favorite: boolean;
-  availability: Availability;
-  exif?: Record<string, string> | null;
-  evaluation?: object | null;
-  sourcePlan?: object | null;
-  retake?: object | null;
-};
-export type Filter = { subject?: string; camera?: string; lens?: string; favorite?: boolean };
-export type DeletionJob = {
-  jobId: string;
-  mediaId: string;
-  state: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
-  failureReason: string | null;
-};
-export type PortfolioApi = {
-  list(filter?: Filter): Promise<{ items: Work[]; nextCursor: string | null }>;
-  detail(id: string): Promise<Work>;
-  favorite(id: string, value: boolean): Promise<{ mediaId: string; favorite: boolean }>;
-  deleteWork(id: string): Promise<DeletionJob>;
-};
-export function createPortfolioApi(network: NetworkClient): PortfolioApi {
-  return {
-    async list(filter = {}) {
-      const q = Object.entries(filter)
-        .filter(([, v]) => v)
-        .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
-        .join('&');
-      return network.request({ path: `/portfolio/works${q ? `?${q}` : ''}` });
-    },
-    detail: id => network.request({ path: `/portfolio/works/${id}` }),
-    favorite: (id, value) =>
-      network.request({
-        path: `/portfolio/works/${id}`,
-        method: 'PUT',
-        body: JSON.stringify({ favorite: value }),
-      }),
-    deleteWork: id => network.request({ path: `/portfolio/works/${id}`, method: 'DELETE' }),
-  };
-}
-export function PortfolioScreen({ api: client }: { api: PortfolioApi }) {
+import type { PortfolioUseCases } from './application/PortfolioUseCases';
+import type { Work } from './domain/portfolio';
+
+export type { Availability, DeletionJob, Filter, Work } from './domain/portfolio';
+
+export function PortfolioScreen({
+  useCases,
+  onReanalyze,
+  onCreateSession,
+  onCompare,
+}: {
+  useCases: PortfolioUseCases;
+  onReanalyze?: (input: { mediaId: string; sessionId?: string }) => void;
+  onCreateSession?: (input: { shootingPlanId: string; planContext: string }) => void;
+  onCompare?: (input: { originalEvaluationId: string; retakeEvaluationId: string }) => void;
+}) {
   const [items, setItems] = useState<Work[]>([]),
     [detail, setDetail] = useState<Work | null>(null),
     [camera, setCamera] = useState(''),
@@ -64,22 +26,24 @@ export function PortfolioScreen({ api: client }: { api: PortfolioApi }) {
   const load = useCallback(async () => {
     try {
       setError(null);
-      setItems((await client.list({ camera: camera || undefined, lens: lens || undefined })).items);
+      setItems(
+        (await useCases.loadWorks({ camera: camera || undefined, lens: lens || undefined })).items,
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : '作品集读取失败，请重试。');
     }
-  }, [camera, client, lens]);
+  }, [camera, lens, useCases]);
   useEffect(() => {
     load().catch(() => undefined);
   }, [load]);
   const favorite = async (w: Work) => {
-    const x = await client.favorite(w.mediaId, !w.favorite);
+    const x = await useCases.changeFavorite(w.mediaId, !w.favorite);
     setDetail(d => (d?.mediaId === x.mediaId ? { ...d, favorite: x.favorite } : d));
   };
   const remove = async (w: Work) => {
     setConfirming(false);
     try {
-      const job = await client.deleteWork(w.mediaId);
+      const job = await useCases.deleteWork(w.mediaId);
       if (job.state === 'COMPLETED') {
         setDeletion('删除完成');
         setDetail(null);
@@ -97,6 +61,45 @@ export function PortfolioScreen({ api: client }: { api: PortfolioApi }) {
         <Text>{detail.availability.evaluation ? '已有评分' : '评分暂不可用'}</Text>
         <Text>{detail.availability.sourcePlan ? '已有拍摄方案' : '拍摄方案暂不可用'}</Text>
         <Text>{detail.availability.retake ? '已有重拍关联' : '重拍关联暂不可用'}</Text>
+        <Pressable
+          accessibilityRole="button"
+          disabled={!onReanalyze}
+          testID="portfolio-reanalyze"
+          onPress={() =>
+            onReanalyze?.({
+              mediaId: detail.mediaId,
+              sessionId: detail.workflowContext?.evaluation?.sessionId ?? undefined,
+            })
+          }
+        >
+          <Text>重新分析照片</Text>
+        </Pressable>
+        {detail.workflowContext?.sourcePlan ? (
+          <Pressable
+            testID="portfolio-create-session"
+            onPress={() => onCreateSession?.(detail.workflowContext!.sourcePlan!)}
+          >
+            <Text>创建拍摄任务</Text>
+          </Pressable>
+        ) : (
+          <Text>拍摄方案暂不可用</Text>
+        )}
+        {detail.workflowContext?.comparisonCandidates.length &&
+        detail.workflowContext.comparisonCandidates.length > 1 ? (
+          <Pressable
+            testID="portfolio-open-comparison"
+            onPress={() =>
+              onCompare?.({
+                originalEvaluationId: detail.workflowContext!.comparisonCandidates[0].evaluationId,
+                retakeEvaluationId: detail.workflowContext!.comparisonCandidates[1].evaluationId,
+              })
+            }
+          >
+            <Text>查看重拍对比</Text>
+          </Pressable>
+        ) : (
+          <Text>暂无可比较的同会话作品</Text>
+        )}
         {deletion && <Text>{deletion}</Text>}
         <Pressable testID={`portfolio-favorite-${detail.mediaId}`} onPress={() => favorite(detail)}>
           <Text>{detail.favorite ? '已收藏' : '收藏'}</Text>
@@ -142,8 +145,8 @@ export function PortfolioScreen({ api: client }: { api: PortfolioApi }) {
             key={w.mediaId}
             testID={`portfolio-work-${w.mediaId}`}
             onPress={() =>
-              client
-                .detail(w.mediaId)
+              useCases
+                .loadWork(w.mediaId)
                 .then(setDetail)
                 .catch(e => setError(e.message))
             }

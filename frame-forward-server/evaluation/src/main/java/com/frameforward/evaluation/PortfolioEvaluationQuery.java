@@ -1,6 +1,7 @@
 package com.frameforward.evaluation;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Component;
@@ -30,7 +31,7 @@ public class PortfolioEvaluationQuery {
                 .eq(PhotoEvaluationEntity::getAccountId, accountId).eq(PhotoEvaluationEntity::getMediaId, mediaId)
                 .orderByDesc(PhotoEvaluationEntity::getCreatedAt).last("LIMIT 1"));
         if (evaluation == null)
-            return Detail.empty();
+            return Detail.empty(mediaId);
         Map<String, Object> result = read(evaluation.resultJson);
         ShootingSessionEntity session = evaluation.sessionId == null
                 ? null
@@ -48,7 +49,30 @@ public class PortfolioEvaluationQuery {
                 ? null
                 : Map.of("originalEvaluationId", retake.originalEvaluationId, "retakeEvaluationId",
                         retake.retakeEvaluationId);
-        return new Detail(result, plan, retakeView);
+        return new Detail(result, plan, retakeView, workflow(mediaId, evaluation, session));
+    }
+
+    private WorkflowContext workflow(String mediaId, PhotoEvaluationEntity evaluation, ShootingSessionEntity session) {
+        Map<String, Object> evaluationView = new LinkedHashMap<>();
+        evaluationView.put("evaluationId", evaluation.id);
+        evaluationView.put("sessionId", evaluation.sessionId);
+        Map<String, Object> plan = session == null
+                ? null
+                : Map.of("shootingPlanId", session.shootingPlanId, "planContext", session.planContext);
+        Map<String, Object> sessionView = session == null
+                ? null
+                : Map.of("sessionId", session.id, "shootingPlanId", session.shootingPlanId, "planContext",
+                        session.planContext);
+        List<Map<String, Object>> candidates = session == null
+                ? List.of()
+                : evaluations
+                        .selectList(new LambdaQueryWrapper<PhotoEvaluationEntity>()
+                                .eq(PhotoEvaluationEntity::getAccountId, evaluation.accountId)
+                                .eq(PhotoEvaluationEntity::getSessionId, session.id)
+                                .isNotNull(PhotoEvaluationEntity::getResultJson))
+                        .stream().map(item -> Map.<String, Object>of("evaluationId", item.id, "mediaId", item.mediaId))
+                        .toList();
+        return new WorkflowContext(mediaId, evaluationView, plan, sessionView, candidates);
     }
 
     private Map<String, Object> read(String value) {
@@ -62,9 +86,13 @@ public class PortfolioEvaluationQuery {
         }
     }
 
-    public record Detail(Map<String, Object> evaluation, Map<String, Object> sourcePlan, Map<String, Object> retake) {
-        static Detail empty() {
-            return new Detail(null, null, null);
+    public record Detail(Map<String, Object> evaluation, Map<String, Object> sourcePlan, Map<String, Object> retake,
+            WorkflowContext workflowContext) {
+        static Detail empty(String mediaId) {
+            return new Detail(null, null, null, new WorkflowContext(mediaId, null, null, null, List.of()));
         }
+    }
+    public record WorkflowContext(String mediaId, Map<String, Object> evaluation, Map<String, Object> sourcePlan,
+            Map<String, Object> session, List<Map<String, Object>> comparisonCandidates) {
     }
 }

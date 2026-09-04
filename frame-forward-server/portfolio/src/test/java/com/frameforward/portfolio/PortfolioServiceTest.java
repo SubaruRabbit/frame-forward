@@ -64,11 +64,26 @@ class PortfolioServiceTest {
         assertEquals("work-2", page.nextCursor());
     }
 
+    @Test
+    void detailExposesTypedWorkflowContext() {
+        when(auth.requireAccountId("token")).thenReturn("account-1");
+        when(media.findOwned("account-1", "work-1")).thenReturn(item("work-1", "Sony", "50mm"));
+        when(favorites.selectCount(any())).thenReturn(0L);
+        var context = new PortfolioEvaluationQuery.WorkflowContext("work-1", Map.of("evaluationId", "eval-1"),
+                null, null, List.of());
+        when(evaluations.findOwned("account-1", "work-1"))
+                .thenReturn(new PortfolioEvaluationQuery.Detail(Map.of(), null, null, context));
+
+        assertEquals(context, service.detail("token", "work-1").get("workflowContext"));
+    }
+
     private void arrangeItems(PortfolioMediaQuery.Item... items) {
         when(auth.requireAccountId("token")).thenReturn("account-1");
         when(media.listOwned("account-1")).thenReturn(List.of(items));
         when(deletionJobs.selectCount(any())).thenReturn(0L);
-        when(evaluations.findOwned(eq("account-1"), any())).thenReturn(new PortfolioEvaluationQuery.Detail(null, null, null));
+        when(evaluations.findOwned(eq("account-1"), any()))
+                .thenReturn(new PortfolioEvaluationQuery.Detail(null, null, null,
+                        new PortfolioEvaluationQuery.WorkflowContext(null, null, null, null, List.of())));
     }
 
     private static PortfolioMediaQuery.Item item(String mediaId, String camera, String lens) {

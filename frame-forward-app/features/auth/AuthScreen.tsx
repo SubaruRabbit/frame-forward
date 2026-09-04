@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import type { AuthUseCases } from './application/AuthUseCases';
 
-export function AuthScreen() {
+export function AuthScreen({
+  useCases,
+  onAuthenticated,
+}: {
+  useCases: AuthUseCases;
+  onAuthenticated: () => void;
+}) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -9,6 +16,19 @@ export function AuthScreen() {
   const [email, setEmail] = useState('');
   const register = mode === 'register';
   const disabled = register ? !username || !email || !password : !identifier || !password;
+  const [error, setError] = useState<string | null>(null);
+  const submit = async () => {
+    try {
+      setError(null);
+      await useCases.authenticate(
+        register ? 'register' : 'login',
+        register ? { username, email, password } : { identifier, password },
+      );
+      onAuthenticated();
+    } catch {
+      setError('认证失败，请检查信息后重试。');
+    }
+  };
   return (
     <View style={styles.screen} testID="login-screen">
       <Text style={styles.eyebrow}>FRAME FORWARD</Text>
@@ -55,10 +75,12 @@ export function AuthScreen() {
         accessibilityRole="button"
         accessibilityState={{ disabled }}
         disabled={disabled}
+        onPress={submit}
         style={[styles.primary, disabled && styles.disabled]}
       >
         <Text style={styles.primaryText}>{register ? '创建账户' : '登录'}</Text>
       </Pressable>
+      {error && <Text testID="auth-error">{error}</Text>}
       <Pressable
         accessibilityRole="button"
         onPress={() => setMode(register ? 'login' : 'register')}

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +26,9 @@ class ShootingLayerTest {
         manager.persistSceneIfAbsent("account", "media", "portrait", "subject", "style", 30, "[]", "task");
         verify(scenes, times(1)).insert(any(SceneAnalysisEntity.class));
         assertNotNull(manager.findOwnedScene("account", "scene"));
+        var sceneForTask = new SceneAnalysisEntity();
+        when(scenes.selectOne(any())).thenReturn(sceneForTask);
+        assertSame(sceneForTask, manager.findSceneForTask("task"));
         var scene = new SceneAnalysisEntity();
         scene.id = "scene";
         scene.equipmentSnapshotJson = "[]";
@@ -77,5 +81,30 @@ class ShootingLayerTest {
         assertEquals(Map.of("ok", true), business.planInput(scene, planRequest).get("mockOutput"));
         business.persistPlanIfAbsent("account", scene, "task");
         verify(manager).persistPlanIfAbsent(eq("account"), eq(scene), eq("task"), any());
+    }
+
+    @Test
+    void completionProcessorReturnsOnlyTheOwnedPersistedSceneId() {
+        var manager = mock(ShootingManager.class);
+        var processor = new SceneAnalysisCompletionProcessor(manager);
+        var task = new com.frameforward.ai.AiTaskEntity();
+        task.id = "task";
+        task.accountId = "account";
+        var scene = new SceneAnalysisEntity();
+        scene.id = "scene";
+        scene.accountId = "account";
+        when(manager.findSceneForTask("task")).thenReturn(scene);
+        var result = new HashMap<String, Object>();
+
+        assertTrue(processor.supports("scene-analysis"));
+        assertFalse(processor.supports("shooting-plan-generation"));
+        processor.complete(task, result);
+
+        assertEquals("scene", result.get("sceneAnalysisId"));
+        when(manager.findSceneForTask("task")).thenReturn(null);
+        assertThrows(IllegalStateException.class, () -> processor.complete(task, new HashMap<>()));
+        scene.accountId = "other-account";
+        when(manager.findSceneForTask("task")).thenReturn(scene);
+        assertThrows(IllegalStateException.class, () -> processor.complete(task, new HashMap<>()));
     }
 }

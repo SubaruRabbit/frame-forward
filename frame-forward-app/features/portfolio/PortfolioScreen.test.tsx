@@ -1,6 +1,8 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
-import { PortfolioScreen, type PortfolioApi } from './PortfolioScreen';
+import { createPortfolioUseCases } from './application/PortfolioUseCases';
+import type { PortfolioPort } from './application/PortfolioPort';
+import { PortfolioScreen } from './PortfolioScreen';
 
 const work = {
   mediaId: 'work-1',
@@ -13,7 +15,7 @@ const work = {
   availability: { exif: false, evaluation: false, sourcePlan: false, retake: false },
 };
 test('显示空作品集和不完整作品详情，且可切换收藏', async () => {
-  const api: PortfolioApi = {
+  const port: PortfolioPort = {
     list: jest.fn().mockResolvedValue({ items: [work], nextCursor: null }),
     detail: jest
       .fn()
@@ -23,7 +25,7 @@ test('显示空作品集和不完整作品详情，且可切换收藏', async ()
   };
   let view: ReturnType<typeof create>;
   await act(async () => {
-    view = create(<PortfolioScreen api={api} />);
+    view = create(<PortfolioScreen useCases={createPortfolioUseCases(port)} />);
   });
   expect(view!.root.findByProps({ testID: 'portfolio-work-work-1' })).toBeTruthy();
   await act(async () => {
@@ -36,7 +38,7 @@ test('显示空作品集和不完整作品详情，且可切换收藏', async ()
   expect(JSON.stringify(view!.toJSON())).toContain('已收藏');
 });
 test('删除失败时保留失败状态而不显示成功', async () => {
-  const api: PortfolioApi = {
+  const port: PortfolioPort = {
     list: jest.fn().mockResolvedValue({ items: [work], nextCursor: null }),
     detail: jest.fn().mockResolvedValue(work),
     favorite: jest.fn(),
@@ -49,7 +51,7 @@ test('删除失败时保留失败状态而不显示成功', async () => {
   };
   let view: ReturnType<typeof create>;
   await act(async () => {
-    view = create(<PortfolioScreen api={api} />);
+    view = create(<PortfolioScreen useCases={createPortfolioUseCases(port)} />);
   });
   await act(async () => {
     view!.root.findByProps({ testID: 'portfolio-work-work-1' }).props.onPress();
@@ -65,7 +67,7 @@ test('删除失败时保留失败状态而不显示成功', async () => {
   expect(JSON.stringify(view!.toJSON())).not.toContain('删除完成');
 });
 test('为空列表显示明确状态', async () => {
-  const api: PortfolioApi = {
+  const port: PortfolioPort = {
     list: jest.fn().mockResolvedValue({ items: [], nextCursor: null }),
     detail: jest.fn(),
     favorite: jest.fn(),
@@ -73,7 +75,7 @@ test('为空列表显示明确状态', async () => {
   };
   let view: ReturnType<typeof create>;
   await act(async () => {
-    view = create(<PortfolioScreen api={api} />);
+    view = create(<PortfolioScreen useCases={createPortfolioUseCases(port)} />);
   });
   expect(JSON.stringify(view!.toJSON())).toContain('还没有作品');
 });
