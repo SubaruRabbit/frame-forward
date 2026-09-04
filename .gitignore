@@ -49,6 +49,7 @@ pnpm-debug.log*
 **/target/
 *.class
 *.jar
+!frame-forward-app/android/gradle/wrapper/gradle-wrapper.jar
 *.war
 *.ear
 .mvn/timing.properties

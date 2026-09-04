@@ -6,14 +6,37 @@ type ScreenStateProps = { kind: StateKind; title: string; message?: string; onRe
 const icons: Record<StateKind, string> = { loading: '◌', empty: '□', denied: '⊘', failure: '!' };
 
 export function ScreenState({ kind, title, message, onRetry }: ScreenStateProps) {
+  const announcement = message ? `${title}：${message}` : title;
   return (
-    <View accessibilityRole="alert" style={styles.container} testID={`${kind}-state`}>
-      <Text style={styles.icon}>{icons[kind]}</Text>
-      <Text style={styles.title}>{title}</Text>
-      {message ? <Text style={styles.message}>{message}</Text> : null}
+    <View
+      accessible
+      accessibilityLabel={announcement}
+      accessibilityLiveRegion="polite"
+      accessibilityRole="alert"
+      style={styles.container}
+      testID={`${kind}-state`}
+    >
+      <Text accessible={false} style={styles.icon}>
+        {icons[kind]}
+      </Text>
+      <Text allowFontScaling style={styles.title}>
+        {title}
+      </Text>
+      {message ? (
+        <Text allowFontScaling style={styles.message}>
+          {message}
+        </Text>
+      ) : null}
       {onRetry ? (
-        <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retry}>
-          <Text style={styles.retryText}>重试</Text>
+        <Pressable
+          accessibilityLabel={`重试：${title}`}
+          accessibilityRole="button"
+          onPress={onRetry}
+          style={styles.retry}
+        >
+          <Text allowFontScaling style={styles.retryText}>
+            重试
+          </Text>
         </Pressable>
       ) : null}
     </View>

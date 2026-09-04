@@ -1,0 +1,98 @@
+name: Cross-project quality gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    name: APP format, lint, typecheck, and test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frame-forward-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frame-forward-app/package-lock.json
+      - run: npm ci
+      - run: npm run quality
+
+  server:
+    name: Server format, test, coverage, and static analysis
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frame-forward-server
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Run server quality gate
+        env:
+          QUALITY_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: mvn -q -DskipTests=false verify
+      - name: Retain coverage and static-analysis reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-quality-reports-${{ github.sha }}
+          path: |
+            frame-forward-server/**/target/**/jacoco.xml
+            frame-forward-server/**/target/**/pmd.xml
+            frame-forward-server/**/target/**/cpd.xml
+          if-no-files-found: warn
+          retention-days: 30
+
+  contracts:
+    name: Contract lint, compatibility, and test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: contracts/package-lock.json
+      - run: npm ci
+      - run: npm run quality
+
+  secrets:
+    name: Sensitive-information scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  commit-messages:
+    name: Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate commit subjects
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: sh scripts/check-commit-messages.sh "$BASE_SHA..$HEAD_SHA"

@@ -4,7 +4,11 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
+    "android:check": "cd android && ./gradlew :app:assembleDebug",
+    "android:release:check": "cd android && ./gradlew :app:verifyReleaseSigning :app:bundleRelease",
     "ios": "react-native run-ios",
+    "ios:prepare": "cd ios && pod install",
+    "ios:check": "npm run ios:prepare && cd ios && xcodebuild -workspace FrameForwardApp.xcworkspace -scheme FrameForwardApp -configuration Release -sdk iphonesimulator -derivedDataPath build CODE_SIGNING_ALLOWED=NO build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",

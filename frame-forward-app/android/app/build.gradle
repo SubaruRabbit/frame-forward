@@ -72,6 +72,18 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+def releaseSigning = [
+    storeFile: project.findProperty('FRAME_FORWARD_RELEASE_STORE_FILE') ?: System.getenv('FRAME_FORWARD_RELEASE_STORE_FILE'),
+    storePassword: project.findProperty('FRAME_FORWARD_RELEASE_STORE_PASSWORD') ?: System.getenv('FRAME_FORWARD_RELEASE_STORE_PASSWORD'),
+    keyAlias: project.findProperty('FRAME_FORWARD_RELEASE_KEY_ALIAS') ?: System.getenv('FRAME_FORWARD_RELEASE_KEY_ALIAS'),
+    keyPassword: project.findProperty('FRAME_FORWARD_RELEASE_KEY_PASSWORD') ?: System.getenv('FRAME_FORWARD_RELEASE_KEY_PASSWORD'),
+]
+def releaseSigningValues = releaseSigning.values()
+def releaseSigningConfigured = releaseSigningValues.every { value -> value != null && !value.trim().isEmpty() }
+if (releaseSigningValues.any { value -> value != null && !value.trim().isEmpty() } && !releaseSigningConfigured) {
+    throw new GradleException('Release signing requires all FRAME_FORWARD_RELEASE_* values.')
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -92,17 +104,38 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (releaseSigningConfigured) {
+            release {
+                storeFile file(releaseSigning.storeFile)
+                storePassword releaseSigning.storePassword
+                keyAlias releaseSigning.keyAlias
+                keyPassword releaseSigning.keyPassword
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+    }
+}
+
+tasks.register('verifyReleaseSigning') {
+    group = 'verification'
+    description = 'Verifies that a release build has complete, external signing configuration.'
+    doLast {
+        if (!releaseSigningConfigured) {
+            throw new GradleException('Release signing is not configured. Set all FRAME_FORWARD_RELEASE_* values.')
+        }
+        if (!file(releaseSigning.storeFile).isFile()) {
+            throw new GradleException("Release keystore does not exist: ${releaseSigning.storeFile}")
         }
     }
 }

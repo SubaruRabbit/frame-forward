@@ -2,6 +2,10 @@
   "name": "frame-forward-workspace",
   "private": true,
   "scripts": {
-    "android": "npm --prefix ./frame-forward-app run android"
+    "android": "npm --prefix ./frame-forward-app run android",
+    "quality": "sh ./scripts/check.sh",
+    "quality:app": "npm --prefix ./frame-forward-app run quality",
+    "quality:contracts": "npm --prefix ./contracts run quality",
+    "quality:server": "sh -c 'cd frame-forward-server && QUALITY_BASE_REF=\"${QUALITY_BASE_REF:-HEAD}\" mvn -q -DskipTests=false verify'"
   }
 }

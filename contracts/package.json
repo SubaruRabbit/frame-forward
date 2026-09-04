@@ -6,6 +6,7 @@
     "validate": "redocly lint openapi.yaml",
     "snapshot": "redocly bundle openapi.yaml --ext json --output openapi-baseline.json",
     "compatibility": "redocly bundle openapi.yaml --ext json --output openapi-current.json && node scripts/check-compatibility.mjs openapi-baseline.json openapi-current.json",
+    "quality": "npm run validate && npm run compatibility && npm run test",
     "test": "node --test"
   },
   "devDependencies": {
