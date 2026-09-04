@@ -13,6 +13,7 @@
 - `shared` 提供无业务语义的 Network、安全存储和日志基础能力；Feature 自有 API 适配留在 Feature infrastructure。
 - Presentation 只依赖 Application/Port，不直接依赖 `fetch`、Keychain 或硬编码 URL。
 - 错误映射覆盖网络、认证、授权、校验、超时、取消和未知错误。
+- 本次迁移现有的设备、场景分析、参考图、作品集与 JPEG 上传调用点，使它们通过 Composition Root 注入的 Network Layer 访问服务端。
 
 ## Risks / Trade-offs
 
@@ -20,4 +21,4 @@
 
 ## Migration Plan
 
-先建立可测边界，再由后续双 Feature changes 逐步迁移调用点；每次可独立回退。
+先建立可测边界与 Composition Root，再迁移现有调用点；每个 Feature 适配器保持独立，可随时整体回退本 change。

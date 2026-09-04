@@ -19,7 +19,7 @@ APP 页面直接调用 `fetch`、读取凭据并硬编码地址，缺少统一�
 
 ## Impact
 
-影响 `app`、`shared` 及测试，不改页面功能或公开契约。
+影响 `app`、`shared`、现有 Feature 调用点及测试，不改页面功能或公开契约。
 
 ## Dependencies
 
