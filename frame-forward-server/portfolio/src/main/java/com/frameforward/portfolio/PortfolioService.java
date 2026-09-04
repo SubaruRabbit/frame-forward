@@ -1,42 +1,30 @@
 package com.frameforward.portfolio;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.frameforward.auth.AuthService;
 import com.frameforward.evaluation.PortfolioEvaluationQuery;
-import com.frameforward.evaluation.WorkEvaluationCleanup;
 import com.frameforward.media.PortfolioMediaQuery;
-import com.frameforward.media.WorkMediaCleanup;
 
 @Service
 public class PortfolioService {
     private final AuthService auth;
     private final PortfolioMediaQuery media;
     private final PortfolioEvaluationQuery evaluations;
-    private final PortfolioFavoriteMapper favorites;
-    private final PortfolioWorkDeletionJobMapper deletionJobs;
-    private final WorkEvaluationCleanup evaluationCleanup;
-    private final WorkMediaCleanup mediaCleanup;
+    private final PortfolioBusiness business;
 
     public PortfolioService(AuthService auth, PortfolioMediaQuery media, PortfolioEvaluationQuery evaluations,
-            PortfolioFavoriteMapper favorites, PortfolioWorkDeletionJobMapper deletionJobs,
-            WorkEvaluationCleanup evaluationCleanup, WorkMediaCleanup mediaCleanup) {
+            PortfolioBusiness business) {
         this.auth = auth;
         this.media = media;
         this.evaluations = evaluations;
-        this.favorites = favorites;
-        this.deletionJobs = deletionJobs;
-        this.evaluationCleanup = evaluationCleanup;
-        this.mediaCleanup = mediaCleanup;
+        this.business = business;
     }
 
     public Page list(String token, Filter filter) {
@@ -55,9 +43,9 @@ public class PortfolioService {
     }
     private void addSummaryIfMatching(String accountId, Filter filter, List<Map<String, Object>> all,
             PortfolioMediaQuery.Item item) {
-        if (deletionStarted(accountId, item.mediaId()) || afterCursor(item, filter.cursor))
+        if (business.deletionStarted(accountId, item.mediaId()) || afterCursor(item, filter.cursor))
             return;
-        boolean favorite = favorite(accountId, item.mediaId());
+        boolean favorite = business.favorite(accountId, item.mediaId());
         if ((filter.favorite == null || filter.favorite == favorite)
                 && matches(item.exif(), filter.subject, filter.camera, filter.lens))
             all.add(summary(accountId, item, favorite));
@@ -73,12 +61,12 @@ public class PortfolioService {
 
     public Map<String, Object> detail(String token, String mediaId) {
         String accountId = auth.requireAccountId(token);
-        if (deletionStarted(accountId, mediaId))
+        if (business.deletionStarted(accountId, mediaId))
             throw new NotFound();
         PortfolioMediaQuery.Item item = media.findOwned(accountId, mediaId);
         if (item == null)
             throw new NotFound();
-        Map<String, Object> response = summary(accountId, item, favorite(accountId, mediaId));
+        Map<String, Object> response = summary(accountId, item, business.favorite(accountId, mediaId));
         PortfolioEvaluationQuery.Detail detail = evaluations.findOwned(accountId, mediaId);
         response.put("exif", item.exif().isEmpty() ? null : item.exif());
         response.put("evaluation", detail.evaluation());
@@ -90,75 +78,18 @@ public class PortfolioService {
     @Transactional
     public Favorite setFavorite(String token, String mediaId, boolean value) {
         String accountId = auth.requireAccountId(token);
-        if (deletionStarted(accountId, mediaId) || media.findOwned(accountId, mediaId) == null)
-            throw new NotFound();
-        PortfolioFavoriteEntity current = favorites.selectOne(new LambdaQueryWrapper<PortfolioFavoriteEntity>()
-                .eq(PortfolioFavoriteEntity::getMediaId, mediaId).eq(PortfolioFavoriteEntity::getAccountId, accountId));
-        if (value && current == null) {
-            PortfolioFavoriteEntity created = new PortfolioFavoriteEntity();
-            created.mediaId = mediaId;
-            created.accountId = accountId;
-            created.createdAt = Instant.now();
-            favorites.insert(created);
-        }
-        if (!value && current != null)
-            favorites.deleteById(current.mediaId);
-        return new Favorite(mediaId, value);
+        return business.setFavorite(accountId, mediaId, value, media.findOwned(accountId, mediaId) != null);
     }
 
     @Transactional
     public DeletionJob delete(String token, String mediaId) {
         String accountId = auth.requireAccountId(token);
-        PortfolioWorkDeletionJobEntity job = deletionJobs
-                .selectOne(new LambdaQueryWrapper<PortfolioWorkDeletionJobEntity>()
-                        .eq(PortfolioWorkDeletionJobEntity::getAccountId, accountId)
-                        .eq(PortfolioWorkDeletionJobEntity::getMediaId, mediaId));
-        if (job == null) {
-            if (media.findOwned(accountId, mediaId) == null)
-                throw new NotFound();
-            job = new PortfolioWorkDeletionJobEntity();
-            job.id = UUID.randomUUID().toString();
-            job.accountId = accountId;
-            job.mediaId = mediaId;
-            job.state = "PENDING";
-            job.createdAt = Instant.now();
-            job.updatedAt = job.createdAt;
-            deletionJobs.insert(job);
-        }
-        if (!"COMPLETED".equals(job.state))
-            process(job);
-        return deletionJob(job);
+        return business.delete(accountId, mediaId, media.findOwned(accountId, mediaId) != null);
     }
 
     public DeletionJob deletionStatus(String token, String jobId) {
         String accountId = auth.requireAccountId(token);
-        PortfolioWorkDeletionJobEntity job = deletionJobs
-                .selectOne(new LambdaQueryWrapper<PortfolioWorkDeletionJobEntity>()
-                        .eq(PortfolioWorkDeletionJobEntity::getId, jobId)
-                        .eq(PortfolioWorkDeletionJobEntity::getAccountId, accountId));
-        if (job == null)
-            throw new NotFound();
-        return deletionJob(job);
-    }
-
-    private void process(PortfolioWorkDeletionJobEntity job) {
-        job.state = "IN_PROGRESS";
-        job.failureReason = null;
-        job.updatedAt = Instant.now();
-        deletionJobs.updateById(job);
-        try {
-            evaluationCleanup.deleteForWork(job.accountId, job.mediaId);
-            favorites.delete(new LambdaQueryWrapper<PortfolioFavoriteEntity>()
-                    .eq(PortfolioFavoriteEntity::getMediaId, job.mediaId)
-                    .eq(PortfolioFavoriteEntity::getAccountId, job.accountId));
-            mediaCleanup.deleteForWork(job.accountId, job.mediaId);
-            job.state = "COMPLETED";
-        } catch (RuntimeException exception) {
-            job.state = "FAILED";
-            job.failureReason = "关联数据清理失败，请重试。";
-        }
-        job.updatedAt = Instant.now();
-        deletionJobs.updateById(job);
+        return business.deletionStatus(accountId, jobId);
     }
 
     private Map<String, Object> summary(String accountId, PortfolioMediaQuery.Item item, boolean favorite) {
@@ -174,19 +105,6 @@ public class PortfolioService {
         result.put("availability", Map.of("exif", !item.exif().isEmpty(), "evaluation", detail.evaluation() != null,
                 "sourcePlan", detail.sourcePlan() != null, "retake", detail.retake() != null));
         return result;
-    }
-    private boolean favorite(String accountId, String mediaId) {
-        return favorites.selectCount(
-                new LambdaQueryWrapper<PortfolioFavoriteEntity>().eq(PortfolioFavoriteEntity::getMediaId, mediaId)
-                        .eq(PortfolioFavoriteEntity::getAccountId, accountId)) > 0;
-    }
-    private boolean deletionStarted(String accountId, String mediaId) {
-        return deletionJobs.selectCount(new LambdaQueryWrapper<PortfolioWorkDeletionJobEntity>()
-                .eq(PortfolioWorkDeletionJobEntity::getAccountId, accountId)
-                .eq(PortfolioWorkDeletionJobEntity::getMediaId, mediaId)) > 0;
-    }
-    private static DeletionJob deletionJob(PortfolioWorkDeletionJobEntity job) {
-        return new DeletionJob(job.id, job.mediaId, job.state, job.failureReason);
     }
     private static boolean matches(Map<String, String> exif, String subject, String camera, String lens) {
         return contains(subject(exif), subject) && contains(camera(exif), camera) && contains(lens(exif), lens);

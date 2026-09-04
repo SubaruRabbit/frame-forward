@@ -23,15 +23,14 @@ import com.frameforward.auth.AuthService;
 import com.frameforward.media.MediaEntity;
 import com.frameforward.media.MediaManager;
 import com.frameforward.shooting.ShootingPlanEntity;
-import com.frameforward.shooting.ShootingPlanMapper;
 
 class ReferenceImageServiceTest {
     private final AuthService auth = mock(AuthService.class);
     private final MediaManager media = mock(MediaManager.class);
-    private final ShootingPlanMapper plans = mock(ShootingPlanMapper.class);
-    private final ReferenceImageMapper references = mock(ReferenceImageMapper.class);
     private final AiTaskRuntime tasks = mock(AiTaskRuntime.class);
-    private final ReferenceImageService service = new ReferenceImageService(auth, media, plans, references, tasks);
+    private final ReferenceImageManager manager = mock(ReferenceImageManager.class);
+    private final ReferenceImageService service = new ReferenceImageService(auth, media, tasks,
+            new ReferenceImageBusiness(manager));
 
     @Test
     void createsReferenceImageForValidRequest() {
@@ -43,34 +42,34 @@ class ReferenceImageServiceTest {
         AiTaskRuntime.Created created = new AiTaskRuntime.Created("task-1", AiTaskRuntime.State.QUEUED);
         when(auth.requireAccountId("token")).thenReturn("account-1");
         when(media.findOwned("account-1", "media-1")).thenReturn(scene);
-        when(plans.selectOne(any())).thenReturn(plan);
+        when(manager.findOwnedPlan("account-1", "plan-1")).thenReturn(plan);
         when(tasks.create(any(), any(), any())).thenReturn(created);
-        when(references.selectOne(any())).thenReturn(null);
 
         assertEquals(created, service.create("token", "key", request));
 
-        ArgumentCaptor<ReferenceImageEntity> entity = ArgumentCaptor.forClass(ReferenceImageEntity.class);
-        verify(references).insert(entity.capture());
-        assertEquals("account-1", entity.getValue().accountId);
-        assertEquals("media-1", entity.getValue().environmentMediaId);
-        assertEquals("plan-1", entity.getValue().shootingPlanId);
-        assertEquals("task-1", entity.getValue().aiTaskId);
-        assertEquals("SAFE", entity.getValue().selectedPlanLabel);
-        assertTrue(entity.getValue().promptText.contains("焦段：35mm"));
+        ArgumentCaptor<ReferenceImageManager.NewReference> entity = ArgumentCaptor
+                .forClass(ReferenceImageManager.NewReference.class);
+        verify(manager).persistReferenceIfAbsent(entity.capture());
+        assertEquals("account-1", entity.getValue().accountId());
+        assertEquals("media-1", entity.getValue().environmentMediaId());
+        assertEquals("plan-1", entity.getValue().shootingPlanId());
+        assertEquals("task-1", entity.getValue().aiTaskId());
+        assertEquals("SAFE", entity.getValue().selectedPlanLabel());
+        assertTrue(entity.getValue().promptText().contains("焦段：35mm"));
     }
 
     @ParameterizedTest
     @MethodSource("requestsMissingRequiredFields")
     void rejectsRequestsMissingRequiredFields(ReferenceImageService.Request request) {
         assertThrows(ReferenceImageService.InvalidRequest.class, () -> service.create("token", "key", request));
-        verifyNoInteractions(auth, media, plans, references, tasks);
+        verifyNoInteractions(auth, media, tasks, manager);
     }
 
     @ParameterizedTest
     @MethodSource("requestsWithInvalidStructuredFields")
     void rejectsInvalidStructuredPlanFields(ReferenceImageService.Request request) {
         assertThrows(ReferenceImageService.InvalidRequest.class, () -> service.create("token", "key", request));
-        verifyNoInteractions(auth, media, plans, references, tasks);
+        verifyNoInteractions(auth, media, tasks, manager);
     }
 
     private static Stream<ReferenceImageService.Request> requestsMissingRequiredFields() {

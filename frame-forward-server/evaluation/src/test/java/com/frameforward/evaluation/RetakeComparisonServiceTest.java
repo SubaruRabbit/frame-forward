@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -12,7 +11,6 @@ import static org.mockito.Mockito.when;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.frameforward.ai.RetakeComparisonGraph;
@@ -22,49 +20,43 @@ import com.frameforward.media.MediaManager;
 
 class RetakeComparisonServiceTest {
     private final AuthService auth = mock(AuthService.class);
-    private final PhotoEvaluationMapper evaluations = mock(PhotoEvaluationMapper.class);
-    private final RetakeLinkMapper links = mock(RetakeLinkMapper.class);
-    private final ShootingSessionMapper sessions = mock(ShootingSessionMapper.class);
+    private final EvaluationManager manager = mock(EvaluationManager.class);
     private final MediaManager media = mock(MediaManager.class);
     private final RetakeComparisonGraph graph = mock(RetakeComparisonGraph.class);
-    private final RetakeComparisonService service = new RetakeComparisonService(auth, evaluations, links, sessions,
-            media, graph, new ObjectMapper());
+    private final RetakeComparisonService service = new RetakeComparisonService(auth, manager, media, graph,
+            new ObjectMapper());
 
     @Test
     void createsComparisonAndPersistsRetakeLink() {
         arrangeComparableEvaluations();
-        when(links.selectById("retake")).thenReturn(null);
+        when(manager.findOwnedEvaluation(any(), any())).thenReturn(
+                evaluation("original", "media-original", "{\"total\":70,\"dimensions\":{\"composition\":60}}"),
+                evaluation("retake", "media-retake", "{\"total\":85,\"dimensions\":{\"composition\":80}}"));
+        when(manager.hasOwnedSession(any(), any())).thenReturn(true);
+        when(manager.findSession("session-1")).thenReturn(session());
 
         Map<String, Object> result = service.create("token", request());
 
         assertEquals(15, result.get("scoreDelta"));
         assertEquals("generated", result.get("summary"));
-        ArgumentCaptor<RetakeLinkEntity> link = ArgumentCaptor.forClass(RetakeLinkEntity.class);
-        verify(links).insert(link.capture());
-        assertEquals("retake", link.getValue().retakeEvaluationId);
-        assertEquals("original", link.getValue().originalEvaluationId);
-        assertEquals("account-1", link.getValue().accountId);
-        assertEquals("session-1", link.getValue().sessionId);
+        verify(manager).saveRetakeIfAbsent(any(), any(), any());
     }
 
     @Test
     void rejectsRequestForMissingOriginalEvaluation() {
         when(auth.requireAccountId("token")).thenReturn("account-1");
-        when(evaluations.selectOne(any())).thenReturn(null);
+        when(manager.findOwnedEvaluation(any(), any())).thenReturn(null);
 
         assertThrows(RetakeComparisonService.NotFound.class, () -> service.create("token", request()));
 
-        verifyNoInteractions(links, sessions, media, graph);
+        verifyNoInteractions(media, graph);
     }
 
     @Test
     void returnsComparisonWithoutDuplicatingExistingRetakeLink() {
         arrangeComparableEvaluations();
-        when(links.selectById("retake")).thenReturn(new RetakeLinkEntity());
-
         assertEquals(15, service.create("token", request()).get("scoreDelta"));
-
-        verify(links, never()).insert(any(RetakeLinkEntity.class));
+        verify(manager).saveRetakeIfAbsent(any(), any(), any());
     }
 
     private void arrangeComparableEvaluations() {
@@ -77,11 +69,17 @@ class RetakeComparisonServiceTest {
         MediaEntity photo = new MediaEntity();
         photo.exifJson = "{}";
         when(auth.requireAccountId("token")).thenReturn("account-1");
-        when(evaluations.selectOne(any())).thenReturn(original, retake);
-        when(sessions.selectOne(any())).thenReturn(session);
-        when(sessions.selectById("session-1")).thenReturn(session);
+        when(manager.findOwnedEvaluation(any(), any())).thenReturn(original, retake);
+        when(manager.hasOwnedSession(any(), any())).thenReturn(true);
+        when(manager.findSession("session-1")).thenReturn(session);
         when(media.findById(any())).thenReturn(photo);
         when(graph.summarize(any(), any())).thenReturn(Map.of("summary", "generated"));
+    }
+
+    private static ShootingSessionEntity session() {
+        ShootingSessionEntity value = new ShootingSessionEntity();
+        value.planContext = "composition-plan";
+        return value;
     }
 
     private static PhotoEvaluationEntity evaluation(String id, String mediaId, String resultJson) {

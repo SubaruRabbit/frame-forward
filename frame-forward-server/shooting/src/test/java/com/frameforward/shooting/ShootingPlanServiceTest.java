@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.Test;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.frameforward.ai.AiTaskRuntime;
 import com.frameforward.auth.AuthService;
@@ -16,14 +15,15 @@ class ShootingPlanServiceTest {
     void createsPlanForOwnedScene() {
         var fixture = fixture();
         when(fixture.auth.requireAccountId("token")).thenReturn("account-1");
-        when(fixture.scenes.selectOne(any(LambdaQueryWrapper.class))).thenReturn(scene());
+        when(fixture.manager.findOwnedScene("account-1", "scene-1")).thenReturn(scene());
         when(fixture.tasks.create(eq("token"), eq("key"), any(AiTaskRuntime.CreateRequest.class)))
                 .thenReturn(new AiTaskRuntime.Created("task-1", AiTaskRuntime.State.QUEUED));
 
         var created = fixture.service.create("token", "key", request());
 
         assertEquals("task-1", created.taskId());
-        verify(fixture.plans).insert(any(ShootingPlanEntity.class));
+        verify(fixture.manager).persistPlanIfAbsent(eq("account-1"), any(SceneAnalysisEntity.class), eq("task-1"),
+                anyString());
     }
 
     @Test
@@ -41,23 +41,21 @@ class ShootingPlanServiceTest {
     void doesNotPersistDuplicatePlanForExistingTask() {
         var fixture = fixture();
         when(fixture.auth.requireAccountId("token")).thenReturn("account-1");
-        when(fixture.scenes.selectOne(any(LambdaQueryWrapper.class))).thenReturn(scene());
+        when(fixture.manager.findOwnedScene("account-1", "scene-1")).thenReturn(scene());
         when(fixture.tasks.create(eq("token"), eq("key"), any(AiTaskRuntime.CreateRequest.class)))
                 .thenReturn(new AiTaskRuntime.Created("task-1", AiTaskRuntime.State.QUEUED));
-        when(fixture.plans.selectOne(any(LambdaQueryWrapper.class))).thenReturn(new ShootingPlanEntity());
-
         fixture.service.create("token", "key", request());
 
-        verify(fixture.plans, never()).insert(any(ShootingPlanEntity.class));
+        verify(fixture.manager).persistPlanIfAbsent(eq("account-1"), any(SceneAnalysisEntity.class), eq("task-1"),
+                anyString());
     }
 
     private static Fixture fixture() {
         var auth = mock(AuthService.class);
-        var scenes = mock(SceneAnalysisMapper.class);
-        var plans = mock(ShootingPlanMapper.class);
+        var manager = mock(ShootingManager.class);
         var tasks = mock(AiTaskRuntime.class);
-        return new Fixture(auth, scenes, plans, tasks,
-                new ShootingPlanService(auth, scenes, plans, tasks, new ObjectMapper()));
+        var business = new ShootingBusiness(manager, new ObjectMapper());
+        return new Fixture(auth, manager, tasks, new ShootingPlanService(auth, tasks, business));
     }
 
     private static SceneAnalysisEntity scene() {
@@ -75,7 +73,7 @@ class ShootingPlanServiceTest {
         return request;
     }
 
-    private record Fixture(AuthService auth, SceneAnalysisMapper scenes, ShootingPlanMapper plans, AiTaskRuntime tasks,
+    private record Fixture(AuthService auth, ShootingManager manager, AiTaskRuntime tasks,
             ShootingPlanService service) {
     }
 }

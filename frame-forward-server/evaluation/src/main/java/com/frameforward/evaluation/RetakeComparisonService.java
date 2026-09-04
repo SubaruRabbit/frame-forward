@@ -1,12 +1,10 @@
 package com.frameforward.evaluation;
 
-import java.time.Instant;
 import java.util.*;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.frameforward.ai.RetakeComparisonGraph;
@@ -17,18 +15,14 @@ import com.frameforward.media.MediaManager;
 @Service
 public class RetakeComparisonService {
     private final AuthService auth;
-    private final PhotoEvaluationMapper evaluations;
-    private final RetakeLinkMapper links;
-    private final ShootingSessionMapper sessions;
+    private final EvaluationManager manager;
     private final MediaManager media;
     private final RetakeComparisonGraph graph;
     private final ObjectMapper json;
-    public RetakeComparisonService(AuthService auth, PhotoEvaluationMapper evaluations, RetakeLinkMapper links,
-            ShootingSessionMapper sessions, MediaManager media, RetakeComparisonGraph graph, ObjectMapper json) {
+    public RetakeComparisonService(AuthService auth, EvaluationManager manager, MediaManager media,
+            RetakeComparisonGraph graph, ObjectMapper json) {
         this.auth = auth;
-        this.evaluations = evaluations;
-        this.links = links;
-        this.sessions = sessions;
+        this.manager = manager;
         this.media = media;
         this.graph = graph;
         this.json = json;
@@ -52,27 +46,15 @@ public class RetakeComparisonService {
     private void requireComparableSession(String account, PhotoEvaluationEntity original,
             PhotoEvaluationEntity retake) {
         if (blank(original.sessionId) || !Objects.equals(original.sessionId, retake.sessionId)
-                || sessions.selectOne(new LambdaQueryWrapper<ShootingSessionEntity>()
-                        .eq(ShootingSessionEntity::getId, original.sessionId)
-                        .eq(ShootingSessionEntity::getAccountId, account)) == null)
+                || !manager.hasOwnedSession(account, original.sessionId))
             throw new Invalid();
     }
     private void createLinkIfAbsent(String account, PhotoEvaluationEntity original, PhotoEvaluationEntity retake) {
-        RetakeLinkEntity link = links.selectById(retake.id);
-        if (link == null) {
-            link = new RetakeLinkEntity();
-            link.retakeEvaluationId = retake.id;
-            link.originalEvaluationId = original.id;
-            link.accountId = account;
-            link.sessionId = original.sessionId;
-            link.createdAt = Instant.now();
-            links.insert(link);
-        }
+        manager.saveRetakeIfAbsent(account, original, retake);
     }
     public Map<String, Object> get(String token, String retakeId) {
         String account = auth.requireAccountId(token);
-        RetakeLinkEntity link = links.selectOne(new LambdaQueryWrapper<RetakeLinkEntity>()
-                .eq(RetakeLinkEntity::getRetakeEvaluationId, retakeId).eq(RetakeLinkEntity::getAccountId, account));
+        RetakeLinkEntity link = manager.findOwnedRetake(account, retakeId);
         if (link == null)
             throw new NotFound();
         return compare(owned(account, link.originalEvaluationId), owned(account, link.retakeEvaluationId));
@@ -86,7 +68,7 @@ public class RetakeComparisonService {
         response.put("retake", snapshot(retake, after));
         response.put("scoreDelta", number(after.get("total")) - number(before.get("total")));
         response.put("dimensionChanges", dimensions(before, after));
-        ShootingSessionEntity session = sessions.selectById(original.sessionId);
+        ShootingSessionEntity session = manager.findSession(original.sessionId);
         response.put("compositionChanges", List.of(session.planContext));
         response.put("parameterChanges", parameters(original.mediaId, retake.mediaId));
         response.putAll(graph.summarize(before, after));
@@ -117,8 +99,7 @@ public class RetakeComparisonService {
         return item == null || blank(item.exifJson) ? Map.of() : read(item.exifJson);
     }
     private PhotoEvaluationEntity owned(String account, String id) {
-        PhotoEvaluationEntity item = evaluations.selectOne(new LambdaQueryWrapper<PhotoEvaluationEntity>()
-                .eq(PhotoEvaluationEntity::getId, id).eq(PhotoEvaluationEntity::getAccountId, account));
+        PhotoEvaluationEntity item = manager.findOwnedEvaluation(account, id);
         if (item == null)
             throw new NotFound();
         return item;

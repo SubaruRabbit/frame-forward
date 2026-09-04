@@ -47,8 +47,9 @@ class SceneAnalysisServiceTest {
     }
 
     private static SceneAnalysisService service(AuthService auth) {
+        ShootingBusiness business = new ShootingBusiness(mock(ShootingManager.class), new ObjectMapper());
         return new SceneAnalysisService(auth, mock(MediaManager.class), mock(UserEquipmentService.class),
-                mock(AiTaskRuntime.class), mock(SceneAnalysisMapper.class), new ObjectMapper());
+                mock(AiTaskRuntime.class), business);
     }
 
     private static SceneAnalysisService.Request request(int timeConstraintMinutes) {

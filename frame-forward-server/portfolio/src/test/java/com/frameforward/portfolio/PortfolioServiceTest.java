@@ -23,8 +23,10 @@ class PortfolioServiceTest {
     private final PortfolioEvaluationQuery evaluations = mock(PortfolioEvaluationQuery.class);
     private final PortfolioFavoriteMapper favorites = mock(PortfolioFavoriteMapper.class);
     private final PortfolioWorkDeletionJobMapper deletionJobs = mock(PortfolioWorkDeletionJobMapper.class);
-    private final PortfolioService service = new PortfolioService(auth, media, evaluations, favorites, deletionJobs,
+    private final PortfolioManager manager = new PortfolioManager(favorites, deletionJobs,
             mock(WorkEvaluationCleanup.class), mock(WorkMediaCleanup.class));
+    private final PortfolioService service = new PortfolioService(auth, media, evaluations,
+            new PortfolioBusiness(manager));
 
     @Test
     void listsOnlyMatchingNonFavoriteWorks() {
