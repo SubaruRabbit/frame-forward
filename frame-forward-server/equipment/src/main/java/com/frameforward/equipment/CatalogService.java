@@ -5,41 +5,30 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-
 @Service
 public class CatalogService {
     public static final String VERSION = "p0-2026-01";
-    private final CameraMapper cameras;
-    private final LensMapper lenses;
-    private final AccessoryTypeMapper accessories;
+    private final EquipmentManager manager;
 
-    public CatalogService(CameraMapper cameras, LensMapper lenses, AccessoryTypeMapper accessories) {
-        this.cameras = cameras;
-        this.lenses = lenses;
-        this.accessories = accessories;
+    public CatalogService(EquipmentManager manager) {
+        this.manager = manager;
     }
 
     public List<Camera> cameras() {
-        return cameras.selectList(new QueryWrapper<CameraEntity>().orderByAsc("brand", "model")).stream()
-                .map(Camera::from).toList();
+        return manager.cameras().stream().map(Camera::from).toList();
     }
 
     public List<Lens> lenses(String brand) {
-        var query = new QueryWrapper<LensEntity>().orderByAsc("brand", "model");
-        if (brand != null && !brand.isBlank())
-            query.eq("brand", brand.trim());
-        return lenses.selectList(query).stream().map(Lens::from).toList();
+        return manager.lenses(brand).stream().map(Lens::from).toList();
     }
 
     public List<AccessoryType> accessories() {
-        return accessories.selectList(new QueryWrapper<AccessoryTypeEntity>().orderByAsc("id")).stream()
-                .map(AccessoryType::from).toList();
+        return manager.accessories().stream().map(AccessoryType::from).toList();
     }
 
     public Compatibility compatibility(String cameraId, String lensId) {
-        var camera = cameras.selectById(cameraId);
-        var lens = lenses.selectById(lensId);
+        var camera = manager.camera(cameraId);
+        var lens = manager.lens(lensId);
         if (camera == null || lens == null)
             throw new CatalogNotFoundException();
         var result = CompatibilityRules.evaluate(camera.mount, camera.sensorFormat, lens.mount, lens.sensorFormat);

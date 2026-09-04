@@ -19,7 +19,8 @@ class AccountDeletionRetryTest {
         RuntimeException failure = new RuntimeException("file locked");
         AccountDataCleanup cleanup = mock(AccountDataCleanup.class);
         doThrow(failure).doNothing().when(cleanup).deleteForAccount(any(String.class));
-        AuthService auth = new AuthService(accounts, sessions, jobs, List.of(cleanup));
+        AuthManager manager = new AuthManager(accounts, sessions, jobs);
+        AuthService auth = new AuthService(manager, new AuthBusiness(manager, List.of(cleanup)));
         AuthService.SessionTokens session = auth.register("retry_user", "retry@example.com", "ValidPass1!");
 
         AuthService.AccountDeletionJob failed = auth.startAccountDeletion(session.accessToken(), "ValidPass1!");
