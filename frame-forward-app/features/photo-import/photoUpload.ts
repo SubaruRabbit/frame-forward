@@ -1,2 +1,22 @@
-import type {DocumentPickerResponse} from '@react-native-documents/picker';
-export async function uploadJpeg(file: DocumentPickerResponse, accessToken: string, onProgress: (progress: number) => void, endpoint = 'http://10.0.2.2:8080/media/jpeg'): Promise<string> { return new Promise((resolve, reject) => { const request = new XMLHttpRequest(); request.open('POST', endpoint); request.setRequestHeader('Authorization', `Bearer ${accessToken}`); request.upload.onprogress = event => { if (event.lengthComputable) onProgress(Math.round(event.loaded * 100 / event.total)); }; request.onerror = () => reject(new Error('网络中断。请重试上传。')); request.onload = () => { if (request.status >= 200 && request.status < 300) { onProgress(100); resolve((JSON.parse(request.responseText) as {id: string}).id); } else reject(new Error('上传失败，请重试。')); }; const form = new FormData(); form.append('file', {uri: file.uri, name: file.name ?? 'photo.jpg', type: file.type ?? 'image/jpeg'} as unknown as Blob); request.send(form); }); }
+import type { DocumentPickerResponse } from '@react-native-documents/picker';
+import type { NetworkClient } from '../../shared/network/network';
+
+export async function uploadJpeg(
+  file: DocumentPickerResponse,
+  network: NetworkClient,
+  onProgress: (progress: number) => void,
+): Promise<string> {
+  const form = new FormData();
+  form.append('file', {
+    uri: file.uri,
+    name: file.name ?? 'photo.jpg',
+    type: file.type ?? 'image/jpeg',
+  } as unknown as Blob);
+  const result = await network.request<{ id: string }>({
+    path: '/media/jpeg',
+    method: 'POST',
+    body: form,
+  });
+  onProgress(100);
+  return result.id;
+}

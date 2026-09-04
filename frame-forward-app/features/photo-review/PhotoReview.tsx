@@ -1,5 +1,76 @@
 import React from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
-export type PhotoEvaluation = {total:number; dimensions:Record<string,number>; strengths:string[]; primaryProblems:string[]; priorityImprovement:string; technicalDiagnosis:{certainty:'OBSERVATION'|'INFERENCE';text:string}; exifLimit?:string; retakeSteps:string[]};
-export function PhotoReview({result,onReanalyze}:{result:PhotoEvaluation;onReanalyze:()=>void}) {return <View testID="photo-review" style={styles.box}><Text style={styles.score}>总分 {result.total}/100</Text><Text style={styles.note}>艺术评分用于复盘，不是绝对标准。</Text><Section title="分项评分" text={Object.entries(result.dimensions).map(([name,score])=>`${name} ${score}`).join(' · ')}/><Section title="画面优点" text={result.strengths.join('、')}/><Section title="主要问题" text={result.primaryProblems.join('、')}/><Section title="优先改进" text={result.priorityImprovement}/><Section title="参数与技术诊断" text={`${result.technicalDiagnosis.certainty==='INFERENCE'?'推测：':'观察：'}${result.technicalDiagnosis.text}`}/>{result.exifLimit&&<Text testID="exif-limit" style={styles.limit}>EXIF 限制：{result.exifLimit}</Text>}<Section title="重拍步骤" text={result.retakeSteps.map((step,index)=>`${index+1}. ${step}`).join(' ')}/><Pressable accessibilityRole="button" testID="reanalyze-photo" onPress={onReanalyze} style={styles.button}><Text style={styles.buttonText}>重新分析</Text></Pressable></View>}
-function Section({title,text}:{title:string;text:string}){return <View style={styles.section}><Text style={styles.title}>{title}</Text><Text>{text}</Text></View>};const styles=StyleSheet.create({box:{borderColor:'#C8D8D4',borderRadius:16,borderWidth:1,padding:18},score:{color:'#102A43',fontSize:24,fontWeight:'800'},note:{color:'#52616B',marginTop:4},section:{marginTop:14},title:{color:'#102A43',fontWeight:'800'},limit:{color:'#B54708',marginTop:14},button:{backgroundColor:'#18A999',borderRadius:10,marginTop:16,padding:12},buttonText:{color:'#FFF',fontWeight:'800',textAlign:'center'}});
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+export type PhotoEvaluation = {
+  total: number;
+  dimensions: Record<string, number>;
+  strengths: string[];
+  primaryProblems: string[];
+  priorityImprovement: string;
+  technicalDiagnosis: { certainty: 'OBSERVATION' | 'INFERENCE'; text: string };
+  exifLimit?: string;
+  retakeSteps: string[];
+};
+export function PhotoReview({
+  result,
+  onReanalyze,
+}: {
+  result: PhotoEvaluation;
+  onReanalyze: () => void;
+}) {
+  return (
+    <View testID="photo-review" style={styles.box}>
+      <Text style={styles.score}>总分 {result.total}/100</Text>
+      <Text style={styles.note}>艺术评分用于复盘，不是绝对标准。</Text>
+      <Section
+        title="分项评分"
+        text={Object.entries(result.dimensions)
+          .map(([name, score]) => `${name} ${score}`)
+          .join(' · ')}
+      />
+      <Section title="画面优点" text={result.strengths.join('、')} />
+      <Section title="主要问题" text={result.primaryProblems.join('、')} />
+      <Section title="优先改进" text={result.priorityImprovement} />
+      <Section
+        title="参数与技术诊断"
+        text={`${result.technicalDiagnosis.certainty === 'INFERENCE' ? '推测：' : '观察：'}${
+          result.technicalDiagnosis.text
+        }`}
+      />
+      {result.exifLimit && (
+        <Text testID="exif-limit" style={styles.limit}>
+          EXIF 限制：{result.exifLimit}
+        </Text>
+      )}
+      <Section
+        title="重拍步骤"
+        text={result.retakeSteps.map((step, index) => `${index + 1}. ${step}`).join(' ')}
+      />
+      <Pressable
+        accessibilityRole="button"
+        testID="reanalyze-photo"
+        onPress={onReanalyze}
+        style={styles.button}
+      >
+        <Text style={styles.buttonText}>重新分析</Text>
+      </Pressable>
+    </View>
+  );
+}
+function Section({ title, text }: { title: string; text: string }) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.title}>{title}</Text>
+      <Text>{text}</Text>
+    </View>
+  );
+}
+const styles = StyleSheet.create({
+  box: { borderColor: '#C8D8D4', borderRadius: 16, borderWidth: 1, padding: 18 },
+  score: { color: '#102A43', fontSize: 24, fontWeight: '800' },
+  note: { color: '#52616B', marginTop: 4 },
+  section: { marginTop: 14 },
+  title: { color: '#102A43', fontWeight: '800' },
+  limit: { color: '#B54708', marginTop: 14 },
+  button: { backgroundColor: '#18A999', borderRadius: 10, marginTop: 16, padding: 12 },
+  buttonText: { color: '#FFF', fontWeight: '800', textAlign: 'center' },
+});

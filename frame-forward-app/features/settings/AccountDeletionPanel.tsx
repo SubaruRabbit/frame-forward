@@ -1,10 +1,121 @@
-import React, {useState} from 'react';
-import {Modal, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
+import React, { useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-export function AccountDeletionPanel({onConfirm}: {onConfirm: (password: string) => Promise<void> | void}) {
-  const [password, setPassword] = useState(''); const [confirming, setConfirming] = useState(false); const [busy, setBusy] = useState(false);
+export function AccountDeletionPanel({
+  onConfirm,
+}: {
+  onConfirm: (password: string) => Promise<void> | void;
+}) {
+  const [password, setPassword] = useState('');
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
   const start = () => password && setConfirming(true);
-  const finish = async () => { setBusy(true); try { await onConfirm(password); } finally { setBusy(false); } };
-  return <View style={styles.card} testID="account-deletion-panel"><Text style={styles.title}>注销账号</Text><Text style={styles.copy}>这会永久删除你的作品、课程进度和器材记录，且无法恢复。</Text><Text style={styles.label}>输入当前密码</Text><TextInput testID="account-deletion-password" secureTextEntry value={password} onChangeText={setPassword} autoComplete="current-password" style={styles.input}/><Pressable accessibilityRole="button" accessibilityState={{disabled: !password}} disabled={!password} onPress={start} style={[styles.danger, !password && styles.disabled]} testID="start-account-deletion"><Text style={styles.dangerText}>继续注销</Text></Pressable><Modal transparent visible={confirming} animationType="fade" onRequestClose={() => setConfirming(false)}><View style={styles.backdrop}><View accessibilityViewIsModal style={styles.dialog}><Text style={styles.title}>确认永久注销？</Text><Text style={styles.copy}>确认后将立即退出登录，并开始删除全部私有数据。</Text><Pressable accessibilityRole="button" disabled={busy} onPress={() => setConfirming(false)} style={styles.cancel} testID="cancel-account-deletion"><Text style={styles.cancelText}>保留账号</Text></Pressable><Pressable accessibilityRole="button" disabled={busy} onPress={finish} style={styles.danger} testID="confirm-account-deletion"><Text style={styles.dangerText}>{busy ? '正在注销…' : '永久注销账号'}</Text></Pressable></View></View></Modal></View>;
+  const finish = async () => {
+    setBusy(true);
+    try {
+      await onConfirm(password);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <View style={styles.card} testID="account-deletion-panel">
+      <Text style={styles.title}>注销账号</Text>
+      <Text style={styles.copy}>这会永久删除你的作品、课程进度和器材记录，且无法恢复。</Text>
+      <Text style={styles.label}>输入当前密码</Text>
+      <TextInput
+        testID="account-deletion-password"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+        autoComplete="current-password"
+        style={styles.input}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !password }}
+        disabled={!password}
+        onPress={start}
+        style={[styles.danger, !password && styles.disabled]}
+        testID="start-account-deletion"
+      >
+        <Text style={styles.dangerText}>继续注销</Text>
+      </Pressable>
+      <Modal
+        transparent
+        visible={confirming}
+        animationType="fade"
+        onRequestClose={() => setConfirming(false)}
+      >
+        <View style={styles.backdrop}>
+          <View accessibilityViewIsModal style={styles.dialog}>
+            <Text style={styles.title}>确认永久注销？</Text>
+            <Text style={styles.copy}>确认后将立即退出登录，并开始删除全部私有数据。</Text>
+            <Pressable
+              accessibilityRole="button"
+              disabled={busy}
+              onPress={() => setConfirming(false)}
+              style={styles.cancel}
+              testID="cancel-account-deletion"
+            >
+              <Text style={styles.cancelText}>保留账号</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={busy}
+              onPress={finish}
+              style={styles.danger}
+              testID="confirm-account-deletion"
+            >
+              <Text style={styles.dangerText}>{busy ? '正在注销…' : '永久注销账号'}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
 }
-const styles=StyleSheet.create({card:{borderColor:'#E6B8B0',borderRadius:16,borderWidth:1,marginTop:22,padding:16},title:{color:'#102A43',fontSize:18,fontWeight:'800'},copy:{color:'#52616B',lineHeight:20,marginTop:6},label:{color:'#102A43',fontWeight:'700',marginTop:16},input:{backgroundColor:'#FFF',borderColor:'#C8D8D4',borderRadius:12,borderWidth:1,color:'#102A43',marginTop:8,minHeight:48,paddingHorizontal:14},danger:{alignItems:'center',backgroundColor:'#B42318',borderRadius:12,justifyContent:'center',marginTop:16,minHeight:48},disabled:{backgroundColor:'#D9AAA5'},dangerText:{color:'#FFF',fontWeight:'800'},backdrop:{alignItems:'center',backgroundColor:'rgba(16,42,67,.48)',flex:1,justifyContent:'center',padding:24},dialog:{backgroundColor:'#FFF',borderRadius:20,padding:22,width:'100%'},cancel:{alignItems:'center',borderColor:'#C8D8D4',borderRadius:12,borderWidth:1,justifyContent:'center',marginTop:18,minHeight:48},cancelText:{color:'#102A43',fontWeight:'800'}});
+const styles = StyleSheet.create({
+  card: { borderColor: '#E6B8B0', borderRadius: 16, borderWidth: 1, marginTop: 22, padding: 16 },
+  title: { color: '#102A43', fontSize: 18, fontWeight: '800' },
+  copy: { color: '#52616B', lineHeight: 20, marginTop: 6 },
+  label: { color: '#102A43', fontWeight: '700', marginTop: 16 },
+  input: {
+    backgroundColor: '#FFF',
+    borderColor: '#C8D8D4',
+    borderRadius: 12,
+    borderWidth: 1,
+    color: '#102A43',
+    marginTop: 8,
+    minHeight: 48,
+    paddingHorizontal: 14,
+  },
+  danger: {
+    alignItems: 'center',
+    backgroundColor: '#B42318',
+    borderRadius: 12,
+    justifyContent: 'center',
+    marginTop: 16,
+    minHeight: 48,
+  },
+  disabled: { backgroundColor: '#D9AAA5' },
+  dangerText: { color: '#FFF', fontWeight: '800' },
+  backdrop: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(16,42,67,.48)',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  dialog: { backgroundColor: '#FFF', borderRadius: 20, padding: 22, width: '100%' },
+  cancel: {
+    alignItems: 'center',
+    borderColor: '#C8D8D4',
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginTop: 18,
+    minHeight: 48,
+  },
+  cancelText: { color: '#102A43', fontWeight: '800' },
+});

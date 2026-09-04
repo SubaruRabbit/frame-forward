@@ -1,7 +1,7 @@
 import React from 'react';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import {AppShell} from './app/AppShell';
+import { AppShell } from './app/AppShell';
 
 export default function App() {
   return (
