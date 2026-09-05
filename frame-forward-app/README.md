@@ -1,97 +1,98 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# FrameForward 客户端
 
-# Getting Started
+FrameForward 客户端是“下一张 FrameForward”的 React Native 应用，当前以 Android 为首要目标平台。它为摄影学习、器材管理、现场分析、拍摄方案、作品点评和重拍比较提供移动端入口。
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 技术栈
 
-## Step 1: Start Metro
+- React Native 0.87
+- React 19
+- TypeScript
+- Jest、ESLint 和 Prettier
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 环境要求
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- Node.js 22.11 或更高版本
+- npm
+- Android Studio、Android SDK 和已启动的 Android 模拟器或已连接设备
+- JDK（供 Android Gradle 构建使用）
+
+iOS 代码保留在仓库中；如需运行 iOS，还需要 macOS、Xcode、CocoaPods 和 Ruby Bundler。
+
+## 本地环境变量
+
+常规 Android 开发不需要客户端 dotenv 配置。Android Release 构建所需的签名变量统一维护在仓库根目录的[`.env.example`](../.env.example)中：
 
 ```sh
-# Using npm
+# 在仓库根目录执行一次
+cp .env.example .env
+
+# 执行 Release 构建前导出变量
+set -a && . ./.env && set +a
+```
+
+`.env` 已被 Git 忽略；只在本机填写真实签名凭据，禁止提交。Release 签名变量包括 `FRAME_FORWARD_RELEASE_STORE_FILE`、`FRAME_FORWARD_RELEASE_STORE_PASSWORD`、`FRAME_FORWARD_RELEASE_KEY_ALIAS` 和 `FRAME_FORWARD_RELEASE_KEY_PASSWORD`。
+
+## 安装与运行
+
+在本目录执行：
+
+```sh
+npm install
+
+# 启动 Metro 开发服务器
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
+另开一个终端后，构建并安装 Android 应用：
 
 ```sh
-# Using npm
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+也可用以下命令仅校验 Android Debug 构建：
 
 ```sh
-bundle install
+npm run android:check
 ```
 
-Then, and every time you update your native dependencies, run:
+若要准备并运行 iOS：
 
 ```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+npm run ios:prepare
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## 质量检查
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```sh
+# 格式、Lint、类型检查和 Jest 测试
+npm run quality
 
-## Step 3: Modify your app
+# 分项执行
+npm run format:check
+npm run lint
+npm run typecheck
+npm test
+```
 
-Now that you have successfully run the app, let's make changes!
+`npm run format` 和 `npm run lint:fix` 会改写文件，仅在需要显式修复格式或可自动修复的 Lint 问题时使用。
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## 目录说明
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+| 路径        | 职责                                         |
+| ----------- | -------------------------------------------- |
+| `app/`      | 应用启动、组合根、路由和会话装配             |
+| `features/` | 按摄影业务能力划分的功能模块                 |
+| `shared/`   | 跨功能复用的网络、存储、安全、日志和 UI 能力 |
+| `android/`  | Android 原生工程                             |
+| `ios/`      | iOS 原生工程                                 |
+| `docs/`     | 客户端发布检查说明                           |
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+功能模块遵循 Presentation、Application、Domain、Infrastructure 的边界；页面和业务逻辑不应直接访问网络、存储或原生 SDK。
 
-## Congratulations! :tada:
+## 相关文档
 
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- [根目录项目说明](../README.md)
+- [产品需求文档](../docs/product/prd/versions/frame-forward-prd-v1.0.0-approved.md)
+- [客户端发布检查](docs/release-gates.md)
+- [APP 工程开发规范](../docs/constitution/app-development-constitution.md)
