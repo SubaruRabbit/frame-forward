@@ -61,7 +61,8 @@ for /f "usebackq tokens=1,* delims==" %A in (".env") do @if not "%A"=="" if not 
 
 ```sh
 cd frame-forward-server
-mvn -pl bootstrap -am spring-boot:run -Dspring-boot.run.profiles=dev
+mvn -pl bootstrap -am package install:install -DskipTests -Dspring-boot.repackage.skip=true
+mvn -pl bootstrap spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 也可以在仓库根目录直接使用启动脚本，脚本会自动读取 `.env` 并导出变量：

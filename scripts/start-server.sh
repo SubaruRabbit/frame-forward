@@ -16,4 +16,5 @@ set -a
 set +a
 
 cd "$ROOT_DIR/frame-forward-server"
-exec mvn -pl bootstrap -am spring-boot:run -Dspring-boot.run.profiles=dev
+mvn -pl bootstrap -am package install:install -DskipTests -Dspring-boot.repackage.skip=true
+exec mvn -pl bootstrap spring-boot:run -Dspring-boot.run.profiles=dev
