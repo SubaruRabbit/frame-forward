@@ -40,8 +40,31 @@ npm --prefix contracts install
 
 ```sh
 cp .env.example .env
-# 编辑 .env 后导出为当前 shell 的进程环境变量
+```
+
+编辑 `.env` 后，根据当前操作系统和终端，将其中的变量导出到当前进程：
+
+### Linux / macOS（bash、zsh 等 POSIX shell）
+
+```sh
 set -a && . ./.env && set +a
+```
+
+### Windows PowerShell
+
+```powershell
+Get-Content .env | Where-Object { $_ -match '^\s*[^#][^=]*=' } | ForEach-Object {
+  $name, $value = $_ -split '=', 2
+  [Environment]::SetEnvironmentVariable($name.Trim(), $value.Trim())
+}
+```
+
+### Windows CMD
+
+在仓库根目录执行以下命令（交互式 CMD 使用单个 `%`；写入 `.bat` 文件时改为 `%%`）：
+
+```bat
+for /f "usebackq tokens=1,* delims==" %A in (".env") do @if not "%A"=="" if not "%A:~0,1%"=="#" set "%A=%B"
 ```
 
 `.env` 已被 Git 忽略，不得提交真实密码、密钥或签名凭据。Spring Boot 和 Android Gradle 读取的是进程环境变量，并不会自动解析 dotenv 文件；启动服务端或执行 Android Release 构建前，请先运行上述导出命令。

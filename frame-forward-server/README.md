@@ -32,14 +32,53 @@ cp .env.example .env
 
 `.env` 已被 Git 忽略。服务端不会自动解析 dotenv 文件；运行前需将其导出为进程环境变量。至少填写 `FRAME_FORWARD_DB_URL`、`FRAME_FORWARD_DB_USERNAME` 和 `FRAME_FORWARD_DB_PASSWORD`；媒体目录和 AI 模型路由可按需调整。不得将真实密码或其他凭据提交到仓库。
 
-## 启动应用
+在仓库根目录，根据当前操作系统和终端导出 `.env` 到当前进程：
 
-在仓库根目录导出环境变量，再进入本目录启动：
+### Linux / macOS（bash、zsh 等 POSIX shell）
 
 ```sh
 set -a && . ./.env && set +a
+```
+
+### Windows PowerShell
+
+```powershell
+Get-Content .env | Where-Object { $_ -match '^\s*[^#][^=]*=' } | ForEach-Object {
+  $name, $value = $_ -split '=', 2
+  [Environment]::SetEnvironmentVariable($name.Trim(), $value.Trim())
+}
+```
+
+### Windows CMD
+
+```bat
+for /f "usebackq tokens=1,* delims==" %A in (".env") do @if not "%A"=="" if not "%A:~0,1%"=="#" set "%A=%B"
+```
+
+## 启动应用
+
+执行上面的环境变量导出命令后，再进入本目录启动：
+
+```sh
 cd frame-forward-server
-mvn -pl bootstrap spring-boot:run -Dspring-boot.run.profiles=dev
+mvn -pl bootstrap -am spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+也可以在仓库根目录直接使用启动脚本，脚本会自动读取 `.env` 并导出变量：
+
+```sh
+# Linux / macOS
+sh ./scripts/start-server.sh
+```
+
+```powershell
+# Windows PowerShell
+.\scripts\start-server.ps1
+```
+
+```bat
+:: Windows CMD
+scripts\start-server.cmd
 ```
 
 应用入口为 `com.frameforward.bootstrap.FrameForwardApplication`，会扫描 `com.frameforward` 下的组件并执行 Flyway 数据库迁移。

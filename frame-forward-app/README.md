@@ -25,9 +25,29 @@ iOS 代码保留在仓库中；如需运行 iOS，还需要 macOS、Xcode、Coco
 ```sh
 # 在仓库根目录执行一次
 cp .env.example .env
+```
 
-# 执行 Release 构建前导出变量
+执行 Release 构建前，在仓库根目录根据当前终端导出变量到当前进程：
+
+### Linux / macOS（bash、zsh 等 POSIX shell）
+
+```sh
 set -a && . ./.env && set +a
+```
+
+### Windows PowerShell
+
+```powershell
+Get-Content .env | Where-Object { $_ -match '^\s*[^#][^=]*=' } | ForEach-Object {
+  $name, $value = $_ -split '=', 2
+  [Environment]::SetEnvironmentVariable($name.Trim(), $value.Trim())
+}
+```
+
+### Windows CMD
+
+```bat
+for /f "usebackq tokens=1,* delims==" %A in (".env") do @if not "%A"=="" if not "%A:~0,1%"=="#" set "%A=%B"
 ```
 
 `.env` 已被 Git 忽略；只在本机填写真实签名凭据，禁止提交。Release 签名变量包括 `FRAME_FORWARD_RELEASE_STORE_FILE`、`FRAME_FORWARD_RELEASE_STORE_PASSWORD`、`FRAME_FORWARD_RELEASE_KEY_ALIAS` 和 `FRAME_FORWARD_RELEASE_KEY_PASSWORD`。
