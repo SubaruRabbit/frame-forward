@@ -1,5 +1,4 @@
 package com.frameforward.course;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -7,13 +6,26 @@ import static org.mockito.Mockito.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.frameforward.course.business.CourseBusiness;
+import com.frameforward.course.business.CourseNotFound;
+import com.frameforward.course.component.CourseCatalog;
+import com.frameforward.course.manager.CourseManager;
+import com.frameforward.course.mapper.AssignmentFeedbackMapper;
+import com.frameforward.course.mapper.CourseContentVersionMapper;
+import com.frameforward.course.mapper.LessonProgressMapper;
+import com.frameforward.course.model.dto.Course;
+import com.frameforward.course.model.entity.AssignmentFeedbackEntity;
+import com.frameforward.course.model.entity.CourseContentVersionEntity;
+import com.frameforward.course.model.entity.LessonProgressEntity;
+
 class CourseLayerTest {
     @Test
     void managerCreatesVersionsRecordsProgressOnlyOnceAndSavesFeedback() {
         var versions = mock(CourseContentVersionMapper.class);
         var progress = mock(LessonProgressMapper.class);
         var feedback = mock(AssignmentFeedbackMapper.class);
-        var manager = new CourseManager(versions, progress, feedback);
+        var manager = new CourseManager(
+                new com.frameforward.course.repository.CourseRepository(versions, progress, feedback));
         var course = CourseCatalog.p0().getFirst();
         when(versions.selectOne(any())).thenReturn(null);
 
@@ -43,7 +55,7 @@ class CourseLayerTest {
         var version = new CourseContentVersionEntity();
         version.id = "version";
         version.contentVersion = course.contentVersion();
-        when(manager.findOrCreateVersion(any(CourseCatalog.Course.class))).thenReturn(version);
+        when(manager.findOrCreateVersion(any(Course.class))).thenReturn(version);
         when(manager.countCompletedLessons("account", "version")).thenReturn(1L);
 
         assertEquals(course.id(), business.course(course.id()).id());
@@ -52,10 +64,10 @@ class CourseLayerTest {
         business.recordSubmission("account", lesson, "media", "task");
         verify(manager).recordProgressIfAbsent("account", "version", lesson.lessonId());
         verify(manager).saveFeedback("account", "version", lesson.lessonId(), "media", "task", lesson.objective());
-        when(manager.findOrCreateVersion(any(CourseCatalog.Course.class), eq("v2"))).thenReturn(version);
+        when(manager.findOrCreateVersion(any(Course.class), eq("v2"))).thenReturn(version);
         assertSame(version, business.regenerate(course.id(), "v2"));
         assertThrows(IllegalArgumentException.class, () -> business.regenerate(course.id(), " "));
-        assertThrows(CourseService.NotFound.class, () -> business.course("missing"));
-        assertThrows(CourseService.NotFound.class, () -> business.lesson(course.id(), "missing"));
+        assertThrows(CourseNotFound.class, () -> business.course("missing"));
+        assertThrows(CourseNotFound.class, () -> business.lesson(course.id(), "missing"));
     }
 }

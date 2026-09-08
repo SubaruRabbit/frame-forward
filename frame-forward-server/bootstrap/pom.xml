@@ -16,6 +16,14 @@
     <dependencies>
         <dependency>
             <groupId>com.frameforward</groupId>
+            <artifactId>common</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.frameforward</groupId>
             <artifactId>course</artifactId>
             <version>${project.version}</version>
         </dependency>

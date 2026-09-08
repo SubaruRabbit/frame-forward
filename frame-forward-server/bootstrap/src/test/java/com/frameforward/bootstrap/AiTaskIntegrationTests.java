@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.frameforward.ai.AiTaskRuntime;
+import com.frameforward.ai.service.AiTaskRuntime;
 
 @SpringBootTest
 @AutoConfigureMockMvc

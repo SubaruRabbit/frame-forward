@@ -19,7 +19,7 @@ class AccountDeletionArchitectureTest {
         assertThat(migration)
                 .contains("USER_OWNED_CLEANUP: user_equipment, lesson_progress and lesson_assignment_feedback");
         String cleanup = Files
-                .readString(Path.of("src/main/java/com/frameforward/bootstrap/AccountDatabaseCleanup.java"));
+                .readString(Path.of("src/main/java/com/frameforward/bootstrap/repository/AccountDatabaseCleanup.java"));
         for (String table : new String[]{"user_equipment", "lesson_progress", "lesson_assignment_feedback"})
             assertThat(cleanup).contains("DELETE FROM " + table);
     }

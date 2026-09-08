@@ -1,10 +1,13 @@
 package com.frameforward.media;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
+
+import com.frameforward.media.mapper.MediaMapper;
+import com.frameforward.media.service.MediaService;
+import com.frameforward.media.service.PortfolioMediaQuery;
 
 class MediaArchitectureTest {
 

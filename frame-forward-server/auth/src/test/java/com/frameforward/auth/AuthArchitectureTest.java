@@ -8,6 +8,9 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.frameforward.auth.business.AuthBusiness;
+import com.frameforward.auth.manager.AuthManager;
+import com.frameforward.auth.service.AuthService;
 
 class AuthArchitectureTest {
     @Test

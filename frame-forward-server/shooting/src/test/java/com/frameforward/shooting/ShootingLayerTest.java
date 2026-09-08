@@ -1,5 +1,4 @@
 package com.frameforward.shooting;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -11,14 +10,27 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.frameforward.media.MediaEntity;
+import com.frameforward.media.model.entity.MediaEntity;
+import com.frameforward.shooting.business.SceneAnalysisInvalidRequest;
+import com.frameforward.shooting.business.ShootingBusiness;
+import com.frameforward.shooting.business.ShootingPlanInvalidRequest;
+import com.frameforward.shooting.business.ShootingPlanSceneNotFound;
+import com.frameforward.shooting.manager.ShootingManager;
+import com.frameforward.shooting.mapper.SceneAnalysisMapper;
+import com.frameforward.shooting.mapper.ShootingPlanMapper;
+import com.frameforward.shooting.model.dto.SceneAnalysisRequest;
+import com.frameforward.shooting.model.dto.ShootingPlanRequest;
+import com.frameforward.shooting.model.entity.SceneAnalysisEntity;
+import com.frameforward.shooting.model.entity.ShootingPlanEntity;
+import com.frameforward.shooting.repository.ShootingRepository;
+import com.frameforward.shooting.service.SceneAnalysisCompletionProcessor;
 
 class ShootingLayerTest {
     @Test
     void managerPersistsOnlyAbsentSceneAndPlan() {
         var scenes = mock(SceneAnalysisMapper.class);
         var plans = mock(ShootingPlanMapper.class);
-        var manager = new ShootingManager(scenes, plans);
+        var manager = new ShootingManager(new ShootingRepository(scenes, plans));
         when(scenes.selectOne(any())).thenReturn(null);
         manager.persistSceneIfAbsent("account", "media", "portrait", "subject", "style", 30, "[]", "task");
         verify(scenes).insert(any(SceneAnalysisEntity.class));
@@ -44,7 +56,7 @@ class ShootingLayerTest {
     void businessValidatesAndBuildsInputsAndReportsMissingScene() {
         var manager = mock(ShootingManager.class);
         var business = new ShootingBusiness(manager, new ObjectMapper());
-        var sceneRequest = new SceneAnalysisService.Request();
+        var sceneRequest = new SceneAnalysisRequest();
         sceneRequest.environmentMediaId = "media";
         sceneRequest.subjectType = "portrait";
         sceneRequest.subject = "person";
@@ -53,7 +65,7 @@ class ShootingLayerTest {
         sceneRequest.equipmentIds = List.of();
         business.validate(sceneRequest);
         sceneRequest.timeConstraintMinutes = 0;
-        assertThrows(SceneAnalysisService.InvalidRequest.class, () -> business.validate(sceneRequest));
+        assertThrows(SceneAnalysisInvalidRequest.class, () -> business.validate(sceneRequest));
         sceneRequest.timeConstraintMinutes = 30;
         var media = new MediaEntity();
         media.id = "media";
@@ -63,7 +75,7 @@ class ShootingLayerTest {
         business.persistSceneIfAbsent("account", media, List.of(), sceneRequest, "task");
         verify(manager).persistSceneIfAbsent(eq("account"), eq("media"), any(), any(), any(), any(), any(), eq("task"));
         when(manager.findOwnedScene("account", "scene")).thenReturn(null);
-        assertThrows(ShootingPlanService.SceneNotFound.class, () -> business.findOwnedScene("account", "scene"));
+        assertThrows(ShootingPlanSceneNotFound.class, () -> business.findOwnedScene("account", "scene"));
         var scene = new SceneAnalysisEntity();
         scene.id = "scene";
         scene.subjectText = "person";
@@ -71,11 +83,11 @@ class ShootingLayerTest {
         scene.equipmentSnapshotJson = "[]";
         when(manager.findOwnedScene("account", "scene")).thenReturn(scene);
         assertSame(scene, business.findOwnedScene("account", "scene"));
-        var planRequest = new ShootingPlanService.Request();
+        var planRequest = new ShootingPlanRequest();
         planRequest.sceneAnalysisId = "scene";
         business.validate(planRequest);
         planRequest.sceneAnalysisId = " ";
-        assertThrows(ShootingPlanService.InvalidRequest.class, () -> business.validate(planRequest));
+        assertThrows(ShootingPlanInvalidRequest.class, () -> business.validate(planRequest));
         planRequest.sceneAnalysisId = "scene";
         planRequest.mockOutput = Map.of("ok", true);
         assertEquals(Map.of("ok", true), business.planInput(scene, planRequest).get("mockOutput"));
@@ -87,9 +99,7 @@ class ShootingLayerTest {
     void completionProcessorReturnsOnlyTheOwnedPersistedSceneId() {
         var manager = mock(ShootingManager.class);
         var processor = new SceneAnalysisCompletionProcessor(manager);
-        var task = new com.frameforward.ai.AiTaskEntity();
-        task.id = "task";
-        task.accountId = "account";
+        var task = new com.frameforward.ai.model.dto.AiTaskCompletionContext("task", "account");
         var scene = new SceneAnalysisEntity();
         scene.id = "scene";
         scene.accountId = "account";

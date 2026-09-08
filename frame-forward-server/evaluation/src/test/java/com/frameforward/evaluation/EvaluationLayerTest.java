@@ -1,5 +1,4 @@
 package com.frameforward.evaluation;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -7,7 +6,18 @@ import static org.mockito.Mockito.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.frameforward.media.MediaEntity;
+import com.frameforward.evaluation.business.EvaluationBusiness;
+import com.frameforward.evaluation.business.PhotoEvaluationInvalid;
+import com.frameforward.evaluation.business.PhotoEvaluationNotFound;
+import com.frameforward.evaluation.manager.EvaluationManager;
+import com.frameforward.evaluation.mapper.PhotoEvaluationMapper;
+import com.frameforward.evaluation.mapper.RetakeLinkMapper;
+import com.frameforward.evaluation.mapper.ShootingSessionMapper;
+import com.frameforward.evaluation.model.dto.PhotoEvaluationRequest;
+import com.frameforward.evaluation.model.entity.PhotoEvaluationEntity;
+import com.frameforward.evaluation.model.entity.RetakeLinkEntity;
+import com.frameforward.evaluation.model.entity.ShootingSessionEntity;
+import com.frameforward.media.model.entity.MediaEntity;
 
 class EvaluationLayerTest {
     @Test
@@ -15,7 +25,8 @@ class EvaluationLayerTest {
         var evaluations = mock(PhotoEvaluationMapper.class);
         var sessions = mock(ShootingSessionMapper.class);
         var links = mock(RetakeLinkMapper.class);
-        var manager = new EvaluationManager(evaluations, sessions, links);
+        var manager = new EvaluationManager(
+                new com.frameforward.evaluation.repository.EvaluationRepository(evaluations, sessions, links));
         var cached = new PhotoEvaluationEntity();
         when(evaluations.selectOne(any())).thenReturn(cached);
         assertNull(manager.findCached("account", "hash", null, true));
@@ -48,19 +59,19 @@ class EvaluationLayerTest {
     void businessValidatesSessionsAndPersistsOnlyNewResults() {
         var manager = mock(EvaluationManager.class);
         var business = new EvaluationBusiness(manager);
-        var request = new PhotoEvaluationService.Request();
+        var request = new PhotoEvaluationRequest();
         request.mediaId = "media";
         request.sessionId = "session";
         var photo = new MediaEntity();
         photo.id = "media";
         photo.contentHash = "hash";
         business.validate(request);
-        assertThrows(PhotoEvaluationService.Invalid.class, () -> business.validate(null));
+        assertThrows(PhotoEvaluationInvalid.class, () -> business.validate(null));
         request.mediaId = " ";
-        assertThrows(PhotoEvaluationService.Invalid.class, () -> business.validate(request));
+        assertThrows(PhotoEvaluationInvalid.class, () -> business.validate(request));
         request.mediaId = "media";
         when(manager.hasOwnedSession("account", "session")).thenReturn(false);
-        assertThrows(PhotoEvaluationService.NotFound.class, () -> business.requireOwnedSession("account", "session"));
+        assertThrows(PhotoEvaluationNotFound.class, () -> business.requireOwnedSession("account", "session"));
         business.requireOwnedSession("account", " ");
         when(manager.hasOwnedSession("account", "session")).thenReturn(true);
         business.requireOwnedSession("account", "session");

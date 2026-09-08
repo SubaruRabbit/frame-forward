@@ -12,4 +12,32 @@
 
     <artifactId>common</artifactId>
     <name>frame-forward-server-common</name>
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>package-architecture-test-support</id>
+                        <phase>process-test-classes</phase>
+                        <goals><goal>test-jar</goal></goals>
+                        <configuration>
+                            <includes>
+                                <include>com/frameforward/common/architecture/JavaLayerPackages.class</include>
+                                <include>com/frameforward/common/architecture/JavaLayerPackages$*.class</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

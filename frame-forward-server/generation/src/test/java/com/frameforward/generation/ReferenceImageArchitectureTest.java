@@ -1,10 +1,14 @@
 package com.frameforward.generation;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.reflect.Field;
 
 import org.junit.jupiter.api.Test;
+
+import com.frameforward.generation.business.ReferenceImageBusiness;
+import com.frameforward.generation.manager.ReferenceImageManager;
+import com.frameforward.generation.service.ReferenceImageCompletionProcessor;
+import com.frameforward.generation.service.ReferenceImageService;
 
 class ReferenceImageArchitectureTest {
     @Test

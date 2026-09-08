@@ -6,6 +6,7 @@
     <parent><groupId>com.frameforward</groupId><artifactId>frame-forward-server</artifactId><version>0.0.1-SNAPSHOT</version></parent>
     <artifactId>equipment</artifactId>
     <dependencies>
+        <dependency><groupId>com.frameforward</groupId><artifactId>common</artifactId><version>${project.version}</version><type>test-jar</type><classifier>tests</classifier><scope>test</scope></dependency>
         <dependency><groupId>com.frameforward</groupId><artifactId>auth</artifactId><version>${project.version}</version></dependency>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
         <dependency><groupId>com.baomidou</groupId><artifactId>mybatis-plus-spring-boot3-starter</artifactId><version>3.5.17</version></dependency>

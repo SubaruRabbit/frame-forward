@@ -16,7 +16,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.frameforward.course.CourseService;
+import com.frameforward.course.service.CourseService;
 
 @SpringBootTest
 @AutoConfigureMockMvc

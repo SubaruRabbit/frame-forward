@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication(scanBasePackages = "com.frameforward")
-@MapperScan("com.frameforward")
+@MapperScan(basePackages = "com.frameforward", annotationClass = org.apache.ibatis.annotations.Mapper.class)
 public class FrameForwardApplication {
 
     public static void main(String[] args) {

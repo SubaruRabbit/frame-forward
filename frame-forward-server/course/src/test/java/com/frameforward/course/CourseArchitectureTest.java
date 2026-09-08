@@ -1,5 +1,4 @@
 package com.frameforward.course;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -8,6 +7,9 @@ import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.frameforward.course.business.CourseBusiness;
+import com.frameforward.course.manager.CourseManager;
+import com.frameforward.course.service.CourseService;
 
 class CourseArchitectureTest {
 
