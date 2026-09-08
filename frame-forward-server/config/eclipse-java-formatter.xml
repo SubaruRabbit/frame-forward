@@ -1,23 +1,56 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <profiles version="21">
     <profile kind="CodeFormatterProfile" name="FrameForward" version="21">
+        <!-- 缩进配置：使用空格，tab宽度4，缩进4，续行缩进2 -->
         <setting id="org.eclipse.jdt.core.formatter.tabulation.char" value="space"/>
         <setting id="org.eclipse.jdt.core.formatter.tabulation.size" value="4"/>
         <setting id="org.eclipse.jdt.core.formatter.indentation.size" value="4"/>
         <setting id="org.eclipse.jdt.core.formatter.continuation_indentation" value="2"/>
+
+        <!-- 行长度 -->
         <setting id="org.eclipse.jdt.core.formatter.lineSplit" value="120"/>
         <setting id="org.eclipse.jdt.core.formatter.join_wrapped_lines" value="true"/>
         <setting id="org.eclipse.jdt.core.formatter.join_lines_in_comments" value="true"/>
+
+        <!-- 空格 -->
         <setting id="org.eclipse.jdt.core.formatter.insert_space_after_comma_in_method_invocation_arguments" value="insert"/>
         <setting id="org.eclipse.jdt.core.formatter.insert_space_after_comma_in_method_declaration_parameters" value="insert"/>
         <setting id="org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_type_declaration" value="insert"/>
         <setting id="org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_method_declaration" value="insert"/>
+
+        <!-- 大括号位置：行尾 -->
         <setting id="org.eclipse.jdt.core.formatter.brace_position_for_type_declaration" value="end_of_line"/>
         <setting id="org.eclipse.jdt.core.formatter.brace_position_for_method_declaration" value="end_of_line"/>
         <setting id="org.eclipse.jdt.core.formatter.brace_position_for_block" value="end_of_line"/>
+        <setting id="org.eclipse.jdt.core.formatter.brace_position_for_annotation_type_declaration" value="end_of_line"/>
+        <setting id="org.eclipse.jdt.core.formatter.brace_position_for_enum_declaration" value="end_of_line"/>
+
+        <!-- if/else 不放在同一行 -->
         <setting id="org.eclipse.jdt.core.formatter.keep_else_statement_on_same_line" value="false"/>
         <setting id="org.eclipse.jdt.core.formatter.keep_then_statement_on_same_line" value="false"/>
         <setting id="org.eclipse.jdt.core.formatter.put_empty_statement_on_new_line" value="false"/>
+
+        <!-- 保留原有最多N行空行 -->
         <setting id="org.eclipse.jdt.core.formatter.number_of_empty_lines_to_preserve" value="1"/>
+
+        <!-- 函数/方法之间空行 -->
+        <!-- 方法定义之间强制保留1行空行 -->
+        <setting id="org.eclipse.jdt.core.formatter.empty_lines_between_methods" value="1"/>
+        <!-- 字段与方法之间空行 -->
+        <setting id="org.eclipse.jdt.core.formatter.empty_lines_between_field_and_method" value="1"/>
+        <!-- 字段之间空行 0=紧贴，1=留一行 -->
+        <setting id="org.eclipse.jdt.core.formatter.empty_lines_between_fields" value="0"/>
+        <!-- 类声明后空行 -->
+        <setting id="org.eclipse.jdt.core.formatter.empty_lines_after_class_declaration" value="1"/>
+        <!-- 类结束前空行 -->
+        <setting id="org.eclipse.jdt.core.formatter.empty_lines_before_class_end" value="1"/>
+
+        <!-- import 区域空行 -->
+        <setting id="org.eclipse.jdt.core.formatter.empty_lines_between_import_groups" value="1"/>
+        <!-- import 和类定义之间空行 -->
+        <setting id="org.eclipse.jdt.core.formatter.empty_lines_after_imports" value="1"/>
+
+        <!-- 注解与方法之间不空行 -->
+        <setting id="org.eclipse.jdt.core.formatter.empty_lines_before_method" value="0"/>
     </profile>
 </profiles>
