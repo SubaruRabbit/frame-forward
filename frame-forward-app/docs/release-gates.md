@@ -1,5 +1,13 @@
 # Native build and release gates
 
+## React Native architecture gate
+
+- `npm run architecture:test` must pass its isolated positive and negative fixtures.
+- `npm run architecture:check` must pass dependency-matrix, public-entry, restricted-SDK, test-boundary, platform-resolution, and runtime-cycle checks.
+- `npm run android:bundle:check` and `npm run ios:bundle:check` must resolve the production Metro graph.
+- `npm run android:check` and `npm run ios:check` remain mandatory native build gates.
+- Root `features/**` source files are permanently prohibited; `npm run architecture:check` runs in strict mode without a migration exception.
+
 Every Android pull request and `main` push builds a debug APK in the `APP native build` workflow. The uploaded artifact name contains the source commit SHA and includes a SHA-256 digest, so a reviewer can trace the binary back to its workflow run and source revision.
 
 An official Android bundle is only created by manually dispatching that workflow with **Build a signed Android release bundle** enabled. The job is protected by the GitHub `production` environment and requires these environment secrets:

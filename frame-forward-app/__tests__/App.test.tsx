@@ -9,15 +9,9 @@ jest.mock('react-native-keychain', () => ({
   resetGenericPassword: jest.fn(),
 }));
 
-import { AppShell } from '../app/AppShell';
-import { persistentRouteStore, type RouteStore } from '../app/storage';
-import type { AppDependencies } from '../app/composition';
-import {
-  DeniedState,
-  EmptyState,
-  FailureState,
-  LoadingState,
-} from '../shared/components/ScreenState';
+import { AppShell, type AppDependencies } from '@app';
+import { persistentRouteStore, type RouteStore } from '@app/testing';
+import { DeniedState, EmptyState, FailureState, LoadingState } from '@components/ScreenState';
 
 const authenticatedSession = { hasValidSession: async () => true };
 

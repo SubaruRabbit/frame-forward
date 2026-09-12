@@ -1,5 +1,13 @@
 # FrameForward 客户端
 
+## 项目结构迁移
+
+应用编排位于 `src/app`，领域状态位于 `src/domains`，复用 UI 位于 `src/components`，外部 I/O 适配器位于 `src/services`。跨边界依赖统一使用 TypeScript、Babel、Jest 和 Metro Babel 管线共同配置的路径别名。
+
+所有功能模块均位于 `src/features/**` 并通过各模块 `index.ts` 暴露公共入口。根目录 `features/**` 源文件永久禁止，`npm run architecture:check` 会在 Android 与 iOS 依赖图中严格拒绝旧结构和跨边界深层导入。
+
+运行 `npm run architecture:test` 验证独立正反例夹具，运行 `npm run architecture:check` 验证 Android 与 iOS 项目依赖图。`npm run quality` 已包含项目架构检查。
+
 FrameForward 客户端是“下一张 FrameForward”的 React Native 应用，当前以 Android 为首要目标平台。它为摄影学习、器材管理、现场分析、拍摄方案、作品点评和重拍比较提供移动端入口。
 
 ## 技术栈
@@ -99,14 +107,15 @@ npm test
 
 ## 目录说明
 
-| 路径        | 职责                                         |
-| ----------- | -------------------------------------------- |
-| `app/`      | 应用启动、组合根、路由和会话装配             |
-| `features/` | 按摄影业务能力划分的功能模块                 |
-| `shared/`   | 跨功能复用的网络、存储、安全、日志和 UI 能力 |
-| `android/`  | Android 原生工程                             |
-| `ios/`      | iOS 原生工程                                 |
-| `docs/`     | 客户端发布检查说明                           |
+| 路径              | 职责                                       |
+| ----------------- | ------------------------------------------ |
+| `src/app/`        | 应用启动、组合根、路由和会话装配           |
+| `src/features/`   | 按摄影业务能力划分的功能模块及公共入口     |
+| `src/services/`   | 跨功能复用的网络、存储、安全和原生适配能力 |
+| `src/components/` | 跨功能复用的 UI 能力                       |
+| `android/`        | Android 原生工程                           |
+| `ios/`            | iOS 原生工程                               |
+| `docs/`           | 客户端发布检查说明                         |
 
 功能模块遵循 Presentation、Application、Domain、Infrastructure 的边界；页面和业务逻辑不应直接访问网络、存储或原生 SDK。
 

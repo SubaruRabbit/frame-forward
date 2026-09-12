@@ -1,0 +1,61 @@
+{
+  "matrix": [
+    { "name": "feature may use domain", "from": "feature", "to": "domain", "allowed": true },
+    { "name": "domain may not use feature", "from": "domain", "to": "feature", "allowed": false },
+    { "name": "feature may not use feature", "from": "feature", "to": "feature", "allowed": false },
+    { "name": "service may use contract", "from": "service", "to": "contract", "allowed": true },
+    {
+      "name": "component may not use service",
+      "from": "component",
+      "to": "service",
+      "allowed": false
+    }
+  ],
+  "restrictedSdk": [
+    {
+      "name": "service may import storage sdk",
+      "region": "service",
+      "test": false,
+      "allowed": true
+    },
+    {
+      "name": "feature may not import storage sdk",
+      "region": "feature",
+      "test": false,
+      "allowed": false
+    },
+    { "name": "test may import storage sdk", "region": "feature", "test": true, "allowed": true }
+  ],
+  "cycles": [
+    {
+      "name": "acyclic",
+      "edges": [
+        ["a", "b"],
+        ["b", "c"]
+      ],
+      "allowed": true
+    },
+    {
+      "name": "runtime cycle",
+      "edges": [
+        ["a", "b"],
+        ["b", "a"]
+      ],
+      "allowed": false
+    }
+  ],
+  "legacyMigration": [
+    {
+      "name": "strict mode allows an empty root feature tree",
+      "actual": [],
+      "manifest": null,
+      "allowed": true
+    },
+    {
+      "name": "strict mode rejects a root feature source",
+      "actual": ["features/legacy/LegacyScreen.tsx"],
+      "manifest": null,
+      "allowed": false
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "moduleSuffixes": [".android", ".native", ""] },
+  "exclude": ["node_modules", "Pods", "**/*.ios.ts", "**/*.ios.tsx"]
+}
