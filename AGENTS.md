@@ -20,13 +20,14 @@
 
 代理必须在执行任务前判断适用范围：
 
-| 任务范围 | 必须读取并遵守 |
-| --- | --- |
-| 所有任务 | `constitution.md`、本 `AGENTS.md` |
-| Java / Spring Boot 后端 | `docs/constitution/java-backend-constitution.md` |
-| iOS、Android、React Native、Flutter、Hybrid APP | `docs/constitution/app-development-constitution.md` |
-| Git 分支、提交、合并、历史、标签或发布相关操作 | `docs/constitution/git.md` |
-| 跨范围任务 | 上述所有相关专项宪章 |
+| 任务范围                                        | 必须读取并遵守                                                                                                                             |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 所有任务                                        | `constitution.md`、本 `AGENTS.md`                                                                                                          |
+| Java / Spring Boot 后端                         | `docs/constitution/java-backend-constitution.md`                                                                                           |
+| iOS、Android、React Native、Flutter、Hybrid APP | `docs/constitution/app-development-constitution.md`                                                                                        |
+| React Native 项目                               | 同时完整读取 `docs/constitution/app-development-constitution.md` 与 `docs/constitution/react-native-project-architecture-specification.md` |
+| Git 分支、提交、合并、历史、标签或发布相关操作  | `docs/constitution/git.md`                                                                                                                 |
+| 跨范围任务                                      | 上述所有相关专项宪章                                                                                                                       |
 
 无法确定任务范围时，必须读取所有可能适用的专项宪章，并采用约束更严格且更安全的规则。规则冲突按照 `constitution.md` 中的优先级处理，不得自行选择更宽松的解释。
 
@@ -71,6 +72,7 @@
 存在宪章规定的阻断项时，不得宣称任务完成。自动化代理委派子代理时，必须把本 `AGENTS.md`、`constitution.md` 和适用专项宪章的约束一并传递；主代理对最终合规性和验证结果负责。
 
 <!-- CODEGRAPH_START -->
+
 ## CodeGraph
 
 In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
@@ -79,4 +81,5 @@ In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the re
 - **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
 
 If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
+
 <!-- CODEGRAPH_END -->
