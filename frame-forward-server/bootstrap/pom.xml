@@ -18,7 +18,6 @@
         <dependency>
             <groupId>com.frameforward</groupId>
             <artifactId>common</artifactId>
-            <version>${project.version}</version>
             <classifier>tests</classifier>
             <type>test-jar</type>
             <scope>test</scope>
@@ -26,52 +25,42 @@
         <dependency>
             <groupId>com.frameforward</groupId>
             <artifactId>course</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.frameforward</groupId>
             <artifactId>common</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.frameforward</groupId>
             <artifactId>auth</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.frameforward</groupId>
             <artifactId>equipment</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.frameforward</groupId>
             <artifactId>media</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.frameforward</groupId>
             <artifactId>ai-workflow</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.frameforward</groupId>
             <artifactId>shooting</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.frameforward</groupId>
             <artifactId>generation</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.frameforward</groupId>
             <artifactId>evaluation</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.frameforward</groupId>
             <artifactId>portfolio</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -107,7 +96,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>${exec-maven-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>verify-quality-reports</id>

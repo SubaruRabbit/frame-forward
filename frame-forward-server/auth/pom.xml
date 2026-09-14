@@ -15,7 +15,6 @@
         <dependency>
             <groupId>com.frameforward</groupId>
             <artifactId>common</artifactId>
-            <version>${project.version}</version>
             <classifier>tests</classifier>
             <type>test-jar</type>
             <scope>test</scope>
@@ -27,7 +26,6 @@
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
-            <version>3.5.17</version>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>
