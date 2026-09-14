@@ -92,12 +92,23 @@ scripts\start-server.cmd
 QUALITY_BASE_REF=HEAD mvn -q -DskipTests=false verify
 ```
 
-该命令会执行 Spotless 格式检查、测试、JaCoCo 报告以及 PMD/CPD 检查。`QUALITY_BASE_REF` 必须是可解析的 Git 提交或引用；在 CI 或评审中，应设置为与目标分支比较的基线。
+该命令会执行 Spotless 格式检查、测试、JaCoCo 报告、Checkstyle 以及 PMD/CPD 检查。`QUALITY_BASE_REF` 必须是可解析的 Git 提交或引用；在 CI 或评审中，应设置为与目标分支比较的基线。
 
-如需在提交 Java 代码前修复格式：
+父 POM 统一配置以下 Maven 插件：
+
+| 插件              | 用途                                                             | 执行方式                       |
+| ----------------- | ---------------------------------------------------------------- | ------------------------------ |
+| Spotless          | 按 Eclipse JDT、导入顺序和 POM 排序规则统一格式                  | `validate` 阶段自动检查        |
+| OpenRewrite       | 使用 `NeedBraces` recipe 为条件和循环语句补全大括号              | 手动执行 `mvn rewrite:run`     |
+| Maven Checkstyle  | 检查生产代码和测试代码中的条件、循环语句是否使用大括号           | `verify` 阶段自动检查          |
+| JaCoCo            | 采集测试覆盖率并在各模块的 `target/site/jacoco/` 下生成 XML 报告 | `verify` 阶段自动生成          |
+| Maven PMD         | 按仓库规则检查圈复杂度，并生成 PMD 与 CPD 重复代码报告           | `verify` 阶段自动检查/生成报告 |
+| Flyway Maven 插件 | 提供数据库迁移相关 Maven goal；执行时需先配置数据库连接环境变量  | 按需手动执行                   |
+
+如需在提交 Java 代码前修复格式并应用大括号规则：
 
 ```sh
-mvn spotless:apply
+mvn spotless:apply rewrite:run
 ```
 
 ## 相关文档

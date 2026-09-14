@@ -90,6 +90,29 @@ npm run quality:contracts
 
 客户端的更多运行、构建和 iOS 准备命令见[`frame-forward-app/package.json`](frame-forward-app/package.json)。全部工作区检查也可在 Linux/macOS 上通过 `./scripts/check.sh` 运行；Windows 请使用 `./scripts/check.ps1`。详情见[质量检查说明](scripts/README.md)。
 
+### 服务端 Maven 工具
+
+[`frame-forward-server/pom.xml`](frame-forward-server/pom.xml)统一配置以下 Maven 插件：
+
+| 插件              | 用途                                                              | 执行方式                       |
+| ----------------- | ----------------------------------------------------------------- | ------------------------------ |
+| Spotless          | 按仓库中的 Eclipse JDT、导入顺序和 POM 排序规则统一格式           | `validate` 阶段自动检查        |
+| OpenRewrite       | 使用 `NeedBraces` recipe 为条件和循环语句补全大括号               | 手动执行 `mvn rewrite:run`     |
+| Maven Checkstyle  | 检查生产代码和测试代码中的条件、循环语句是否使用大括号            | `verify` 阶段自动检查          |
+| JaCoCo            | 采集测试覆盖率并在各模块的 `target/site/jacoco/` 下生成 XML 报告  | `verify` 阶段自动生成          |
+| Maven PMD         | 按仓库规则检查圈复杂度，并生成 PMD 与 CPD 重复代码报告            | `verify` 阶段自动检查/生成报告 |
+| Flyway Maven 插件 | 提供数据库迁移相关的 Maven goal；执行时需先配置数据库连接环境变量 | 按需手动执行                   |
+
+在服务端目录中可先自动修复格式和大括号，再执行完整质量门禁：
+
+```sh
+cd frame-forward-server
+mvn spotless:apply rewrite:run
+QUALITY_BASE_REF=HEAD mvn verify
+```
+
+`QUALITY_BASE_REF` 必须是可解析的 Git 基线引用；质量脚本默认使用 `HEAD`，也可在运行 `npm run quality:server` 前显式指定其他基线。
+
 ## 工程约定
 
 - 开始变更前，请阅读仓库根目录的[AGENTS.md](AGENTS.md)和[项目宪法](constitution.md)。
