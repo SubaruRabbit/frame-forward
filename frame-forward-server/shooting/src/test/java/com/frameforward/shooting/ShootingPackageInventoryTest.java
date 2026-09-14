@@ -9,8 +9,10 @@ import org.junit.jupiter.api.Test;
 import com.frameforward.common.architecture.JavaLayerPackages;
 
 class ShootingPackageInventoryTest {
-    @Test
-    void productionTypesUseTheirLayerDirectories() throws Exception {
-        assertThat(JavaLayerPackages.inspect(Path.of("src/main/java"), "com.frameforward.shooting")).isEmpty();
-    }
+
+	@Test
+	void productionTypesUseTheirLayerDirectories() throws Exception {
+		assertThat(JavaLayerPackages.inspect(Path.of("src/main/java"), "com.frameforward.shooting")).isEmpty();
+	}
+
 }

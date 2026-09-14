@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project
+        xmlns="http://maven.apache.org/POM/4.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.8</version>
-        <relativePath/>
+        <relativePath></relativePath>
     </parent>
 
     <groupId>com.frameforward</groupId>
@@ -19,22 +20,22 @@
     <name>frame-forward-server</name>
 
     <modules>
-        <module>common</module>
-        <module>auth</module>
-        <module>equipment</module>
-        <module>media</module>
-        <module>course</module>
         <module>ai-workflow</module>
-        <module>shooting</module>
-        <module>generation</module>
-        <module>evaluation</module>
-        <module>portfolio</module>
+        <module>auth</module>
         <module>bootstrap</module>
+        <module>common</module>
+        <module>course</module>
+        <module>equipment</module>
+        <module>evaluation</module>
+        <module>generation</module>
+        <module>media</module>
+        <module>portfolio</module>
+        <module>shooting</module>
     </modules>
 
     <properties>
         <java.version>21</java.version>
-        <spotless.version>3.9.0</spotless.version>
+        <spotless.version>3.10.2</spotless.version>
         <jacoco.version>0.8.12</jacoco.version>
         <maven.pmd.plugin.version>3.26.0</maven.pmd.plugin.version>
     </properties>
@@ -42,6 +43,7 @@
     <build>
         <plugins>
             <plugin>
+                <!-- https://github.com/diffplug/spotless/blob/main/plugin-maven/README.md -->
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>${spotless.version}</version>
@@ -57,24 +59,88 @@
                         </excludes>
                         <eclipse>
                             <version>4.26</version>
-                            <file>${maven.multiModuleProjectDirectory}/config/eclipse-java-formatter.xml</file>
+                            <file>${maven.multiModuleProjectDirectory}/config/eclipse-java-style.xml</file>
                         </eclipse>
-                        <removeUnusedImports/>
+                        <shortenFullyQualifiedTypes></shortenFullyQualifiedTypes>
+                        <removeUnusedImports></removeUnusedImports>
                         <importOrder>
                             <file>${maven.multiModuleProjectDirectory}/config/java-import-order.txt</file>
                         </importOrder>
-                        <trimTrailingWhitespace/>
-                        <endWithNewline/>
+                        <trimTrailingWhitespace></trimTrailingWhitespace>
+                        <endWithNewline></endWithNewline>
                         <lineEndings>UNIX</lineEndings>
                     </java>
+                    <pom>
+                        <includes>
+                            <include>pom.xml</include>
+                        </includes>
+                        <sortPom>
+                            <encoding>UTF-8</encoding>
+                            <lineSeparator>\r\n</lineSeparator>
+                            <expandEmptyElements>true</expandEmptyElements>
+                            <spaceBeforeCloseEmptyElement>false</spaceBeforeCloseEmptyElement>
+                            <keepBlankLines>true</keepBlankLines>
+                            <endWithNewline>true</endWithNewline>
+                            <nrOfIndentSpace>4</nrOfIndentSpace>
+                            <indentBlankLines>false</indentBlankLines>
+                            <indentSchemaLocation>false</indentSchemaLocation>
+                            <indentAttribute>all</indentAttribute>
+                            <predefinedSortOrder>recommended_2008_06</predefinedSortOrder>
+                            <sortOrderFile>https://raw.githubusercontent.com/Ekryd/sortpom/master/sorter/src/main/resources/custom_1.xml</sortOrderFile>
+                            <sortDependencies>none</sortDependencies>
+                            <sortDependencyManagement></sortDependencyManagement>
+                            <sortDependencyExclusions></sortDependencyExclusions>
+                            <sortPlugins></sortPlugins>
+                            <sortProperties>false</sortProperties>
+                            <sortModules>true</sortModules>
+                            <sortExecutions>false</sortExecutions>
+                        </sortPom>
+                    </pom>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>verify-java-format</id>
-                        <phase>validate</phase>
+                        <id>spotless-check</id>
                         <goals>
                             <goal>check</goal>
                         </goals>
+                        <phase>validate</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <version>6.46.1</version>
+                <configuration>
+                    <activeRecipes>
+                        <recipe>org.openrewrite.staticanalysis.NeedBraces</recipe>
+                    </activeRecipes>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.openrewrite.recipe</groupId>
+                        <artifactId>rewrite-static-analysis</artifactId>
+                        <version>2.41.1</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <configLocation>${maven.multiModuleProjectDirectory}/config/checkstyle.xml</configLocation>
+                    <consoleOutput>true</consoleOutput>
+                    <failOnViolation>true</failOnViolation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>checkstyle-validation</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>verify</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -91,10 +157,10 @@
                     </execution>
                     <execution>
                         <id>generate-jacoco-xml-report</id>
-                        <phase>verify</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
+                        <phase>verify</phase>
                         <configuration>
                             <formats>
                                 <format>XML</format>
@@ -120,18 +186,18 @@
                 <executions>
                     <execution>
                         <id>generate-pmd-report-and-enforce-complexity</id>
-                        <phase>verify</phase>
                         <goals>
                             <goal>pmd</goal>
                             <goal>check</goal>
                         </goals>
+                        <phase>verify</phase>
                     </execution>
                     <execution>
                         <id>generate-cpd-report</id>
-                        <phase>verify</phase>
                         <goals>
                             <goal>cpd</goal>
                         </goals>
+                        <phase>verify</phase>
                     </execution>
                 </executions>
             </plugin>

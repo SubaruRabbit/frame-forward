@@ -10,13 +10,17 @@ import com.frameforward.auth.service.AuthService;
 
 @RestController
 public class ProtectedResourceController {
-    private final AuthService auth;
-    public ProtectedResourceController(AuthService auth) {
-        this.auth = auth;
-    }
-    @GetMapping("/test/protected")
-    Map<String, String> protectedResource(
-            @RequestHeader(name = "Authorization", required = false) String authorization) {
-        return Map.of("accountId", auth.requireAccountId(AuthService.bearer(authorization)));
-    }
+
+	private final AuthService auth;
+
+	public ProtectedResourceController(AuthService auth) {
+		this.auth = auth;
+	}
+
+	@GetMapping("/test/protected")
+	Map<String, String> protectedResource(
+			@RequestHeader(name = "Authorization", required = false) String authorization) {
+		return Map.of("accountId", auth.requireAccountId(AuthService.bearer(authorization)));
+	}
+
 }

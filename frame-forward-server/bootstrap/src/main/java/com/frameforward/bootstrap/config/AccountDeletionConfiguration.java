@@ -10,8 +10,9 @@ import com.frameforward.bootstrap.repository.AccountDatabaseCleanup;
 @Configuration(proxyBeanMethods = false)
 class AccountDeletionConfiguration {
 
-    @Bean
-    AccountDataCleanup accountDatabaseCleanup(JdbcTemplate jdbc) {
-        return new AccountDatabaseCleanup(jdbc);
-    }
+	@Bean
+	AccountDataCleanup accountDatabaseCleanup(JdbcTemplate jdbc) {
+		return new AccountDatabaseCleanup(jdbc);
+	}
+
 }

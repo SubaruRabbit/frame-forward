@@ -1,4 +1,5 @@
 package com.frameforward.equipment.controller;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,47 +22,49 @@ import com.frameforward.equipment.service.UserEquipmentService;
 @RestController
 @RequestMapping("/equipment")
 public class UserEquipmentController {
-    private final UserEquipmentService equipment;
-    private final AuthService auth;
 
-    public UserEquipmentController(UserEquipmentService equipment, AuthService auth) {
-        this.equipment = equipment;
-        this.auth = auth;
-    }
+	private final UserEquipmentService equipment;
 
-    @GetMapping
-    UserEquipmentList list(@RequestHeader(name = "Authorization", required = false) String authorization) {
-        return new UserEquipmentList(equipment.list(accountId(authorization)));
-    }
+	private final AuthService auth;
 
-    @PostMapping
-    ResponseEntity<UserEquipmentItem> add(@RequestHeader(name = "Authorization", required = false) String authorization,
-            @RequestBody CreateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                equipment.add(accountId(authorization), request.kind(), request.catalogItemId(), request.nickname()));
-    }
+	public UserEquipmentController(UserEquipmentService equipment, AuthService auth) {
+		this.equipment = equipment;
+		this.auth = auth;
+	}
 
-    @DeleteMapping("/{id}")
-    ResponseEntity<Void> remove(@RequestHeader(name = "Authorization", required = false) String authorization,
-            @PathVariable String id) {
-        equipment.remove(accountId(authorization), id);
-        return ResponseEntity.noContent().build();
-    }
+	@GetMapping
+	UserEquipmentList list(@RequestHeader(name = "Authorization", required = false) String authorization) {
+		return new UserEquipmentList(equipment.list(accountId(authorization)));
+	}
 
-    @PutMapping("/cameras/{id}/primary")
-    UserEquipmentItem setPrimary(@RequestHeader(name = "Authorization", required = false) String authorization,
-            @PathVariable String id) {
-        return equipment.setPrimaryCamera(accountId(authorization), id);
-    }
+	@PostMapping
+	ResponseEntity<UserEquipmentItem> add(@RequestHeader(name = "Authorization", required = false) String authorization,
+			@RequestBody CreateRequest request) {
+		return ResponseEntity.status(HttpStatus.CREATED).body(
+				equipment.add(accountId(authorization), request.kind(), request.catalogItemId(), request.nickname()));
+	}
 
-    @GetMapping("/body-lens-combinations")
-    BodyLensCombinationList combinations(
-            @RequestHeader(name = "Authorization", required = false) String authorization) {
-        return new BodyLensCombinationList(equipment.combinations(accountId(authorization)));
-    }
+	@DeleteMapping("/{id}")
+	ResponseEntity<Void> remove(@RequestHeader(name = "Authorization", required = false) String authorization,
+			@PathVariable String id) {
+		equipment.remove(accountId(authorization), id);
+		return ResponseEntity.noContent().build();
+	}
 
-    private String accountId(String authorization) {
-        return auth.requireAccountId(AuthService.bearer(authorization));
-    }
+	@PutMapping("/cameras/{id}/primary")
+	UserEquipmentItem setPrimary(@RequestHeader(name = "Authorization", required = false) String authorization,
+			@PathVariable String id) {
+		return equipment.setPrimaryCamera(accountId(authorization), id);
+	}
+
+	@GetMapping("/body-lens-combinations")
+	BodyLensCombinationList combinations(
+			@RequestHeader(name = "Authorization", required = false) String authorization) {
+		return new BodyLensCombinationList(equipment.combinations(accountId(authorization)));
+	}
+
+	private String accountId(String authorization) {
+		return auth.requireAccountId(AuthService.bearer(authorization));
+	}
 
 }

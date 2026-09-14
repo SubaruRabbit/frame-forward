@@ -1,4 +1,5 @@
 package com.frameforward.portfolio.service;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -15,13 +16,20 @@ import com.frameforward.media.service.PortfolioMediaQuery;
 import com.frameforward.portfolio.business.PortfolioBusiness;
 import com.frameforward.portfolio.business.PortfolioNotFound;
 import com.frameforward.portfolio.model.dto.*;
+
 class PortfolioBoundaryTest {
-    private final AuthService auth = mock(AuthService.class);
-    private final PortfolioMediaQuery media = mock(PortfolioMediaQuery.class);
-    private final PortfolioEvaluationQuery evaluations = mock(PortfolioEvaluationQuery.class);
-    private final PortfolioBusiness business = mock(PortfolioBusiness.class);
-    private final PortfolioService service = new PortfolioService(auth, media, evaluations, business);
-    @Test
+
+	private final AuthService auth = mock(AuthService.class);
+
+	private final PortfolioMediaQuery media = mock(PortfolioMediaQuery.class);
+
+	private final PortfolioEvaluationQuery evaluations = mock(PortfolioEvaluationQuery.class);
+
+	private final PortfolioBusiness business = mock(PortfolioBusiness.class);
+
+	private final PortfolioService service = new PortfolioService(auth, media, evaluations, business);
+
+	@Test
     void normalizesPageLimitsAndBlankFiltersWithoutChangingCursor() {
         when(auth.requireAccountId("token")).thenReturn("owner");
         var items = IntStream.range(0, 105).mapToObj(i -> new PortfolioMediaItem(String.format("%03d", 105-i), 1, 1, Map.<String,String>of())).toList();
@@ -35,7 +43,8 @@ class PortfolioBoundaryTest {
         assertThat(page.items()).extracting(item -> item.get("mediaId")).containsExactly("002", "001");
         assertThat(page.nextCursor()).isNull();
     }
-    @Test
+
+	@Test
     void missingOrDeletingDetailsRemainNotFound() {
         when(auth.requireAccountId("token")).thenReturn("owner");
         assertThatThrownBy(() -> service.detail("token", "missing")).isInstanceOf(PortfolioNotFound.class);
@@ -43,7 +52,8 @@ class PortfolioBoundaryTest {
         assertThatThrownBy(() -> service.detail("token", "deleting")).isInstanceOf(PortfolioNotFound.class);
         verify(media, never()).findOwned("owner", "deleting");
     }
-    @Test
+
+	@Test
     void mutationsAndStatusKeepAccountAndOwnershipContext() {
         when(auth.requireAccountId("token")).thenReturn("owner");
         when(media.findOwned("owner", "media")).thenReturn(new PortfolioMediaItem("media", 1, 1, Map.of()));
@@ -60,4 +70,5 @@ class PortfolioBoundaryTest {
         verify(business).setFavorite("owner", "missing", false, false);
         verify(business).delete("owner", "missing", false);
     }
+
 }

@@ -1,3 +1,6 @@
 package com.frameforward.ai.model.dto;
-public record AiTaskCreation(AiTaskCreated created, boolean schedule) {
+
+public record AiTaskCreation(
+		AiTaskCreated created,
+		boolean schedule) {
 }

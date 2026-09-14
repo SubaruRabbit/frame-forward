@@ -14,38 +14,41 @@ import com.frameforward.ai.repository.AiTaskRepository;
 /** 统一协调 AI 任务的持久化访问。 */
 @Component
 public class AiTaskManager {
-    private final AiTaskRepository tasks;
-    private final List<AiTaskCompletionProcessor> completionProcessors;
 
-    public AiTaskManager(AiTaskRepository tasks, List<AiTaskCompletionProcessor> completionProcessors) {
-        this.tasks = tasks;
-        this.completionProcessors = completionProcessors;
-    }
+	private final AiTaskRepository tasks;
 
-    public void completeResults(AiTaskEntity task, Map<String, Object> result) {
-        var context = new AiTaskCompletionContext(task.id, task.accountId);
-        completionProcessors.stream().filter(processor -> processor.supports(task.operationType))
-                .forEach(processor -> processor.complete(context, result));
-    }
+	private final List<AiTaskCompletionProcessor> completionProcessors;
 
-    public List<AiTaskEntity> findRunning() {
-        return tasks.findRunning();
-    }
+	public AiTaskManager(AiTaskRepository tasks, List<AiTaskCompletionProcessor> completionProcessors) {
+		this.tasks = tasks;
+		this.completionProcessors = completionProcessors;
+	}
 
-    public AiTaskEntity findExisting(String accountId, String operationType, String idempotencyKey) {
-        return tasks.findExisting(accountId, operationType, idempotencyKey);
-    }
+	public void completeResults(AiTaskEntity task, Map<String, Object> result) {
+		var context = new AiTaskCompletionContext(task.id, task.accountId);
+		completionProcessors.stream().filter(processor -> processor.supports(task.operationType))
+				.forEach(processor -> processor.complete(context, result));
+	}
 
-    public AiTaskEntity findById(String taskId) {
-        return tasks.findById(taskId);
-    }
+	public List<AiTaskEntity> findRunning() {
+		return tasks.findRunning();
+	}
 
-    public void create(AiTaskEntity task) {
-        tasks.create(task);
-    }
+	public AiTaskEntity findExisting(String accountId, String operationType, String idempotencyKey) {
+		return tasks.findExisting(accountId, operationType, idempotencyKey);
+	}
 
-    public void update(AiTaskEntity task) {
-        task.updatedAt = Instant.now();
-        tasks.update(task);
-    }
+	public AiTaskEntity findById(String taskId) {
+		return tasks.findById(taskId);
+	}
+
+	public void create(AiTaskEntity task) {
+		tasks.create(task);
+	}
+
+	public void update(AiTaskEntity task) {
+		task.updatedAt = Instant.now();
+		tasks.update(task);
+	}
+
 }

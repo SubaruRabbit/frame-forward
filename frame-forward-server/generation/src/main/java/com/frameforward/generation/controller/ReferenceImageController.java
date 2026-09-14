@@ -1,4 +1,5 @@
 package com.frameforward.generation.controller;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,13 +15,17 @@ import com.frameforward.generation.service.ReferenceImageService;
 @RestController
 @RequestMapping("/reference-images")
 public class ReferenceImageController {
-    private final ReferenceImageService referenceImages;
-    public ReferenceImageController(ReferenceImageService referenceImages) {
-        this.referenceImages = referenceImages;
-    }
-    @PostMapping
-    ResponseEntity<AiTaskCreated> create(@RequestHeader(name = "Authorization", required = false) String authorization,
-            @RequestHeader("Idempotency-Key") String key, @RequestBody ReferenceImageRequest request) {
-        return ResponseEntity.accepted().body(referenceImages.create(AuthService.bearer(authorization), key, request));
-    }
+
+	private final ReferenceImageService referenceImages;
+
+	public ReferenceImageController(ReferenceImageService referenceImages) {
+		this.referenceImages = referenceImages;
+	}
+
+	@PostMapping
+	ResponseEntity<AiTaskCreated> create(@RequestHeader(name = "Authorization", required = false) String authorization,
+			@RequestHeader("Idempotency-Key") String key, @RequestBody ReferenceImageRequest request) {
+		return ResponseEntity.accepted().body(referenceImages.create(AuthService.bearer(authorization), key, request));
+	}
+
 }

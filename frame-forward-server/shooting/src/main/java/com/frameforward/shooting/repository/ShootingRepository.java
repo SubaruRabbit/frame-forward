@@ -10,34 +10,37 @@ import com.frameforward.shooting.model.entity.ShootingPlanEntity;
 
 @Repository
 public class ShootingRepository {
-    private final SceneAnalysisMapper scenes;
-    private final ShootingPlanMapper plans;
 
-    public ShootingRepository(SceneAnalysisMapper scenes, ShootingPlanMapper plans) {
-        this.scenes = scenes;
-        this.plans = plans;
-    }
+	private final SceneAnalysisMapper scenes;
 
-    public SceneAnalysisEntity findSceneForTask(String taskId) {
-        return scenes
-                .selectOne(new LambdaQueryWrapper<SceneAnalysisEntity>().eq(SceneAnalysisEntity::getAiTaskId, taskId));
-    }
+	private final ShootingPlanMapper plans;
 
-    public SceneAnalysisEntity findOwnedScene(String accountId, String sceneAnalysisId) {
-        return scenes.selectOne(new LambdaQueryWrapper<SceneAnalysisEntity>()
-                .eq(SceneAnalysisEntity::getId, sceneAnalysisId).eq(SceneAnalysisEntity::getAccountId, accountId));
-    }
+	public ShootingRepository(SceneAnalysisMapper scenes, ShootingPlanMapper plans) {
+		this.scenes = scenes;
+		this.plans = plans;
+	}
 
-    public ShootingPlanEntity findPlanForTask(String taskId) {
-        return plans
-                .selectOne(new LambdaQueryWrapper<ShootingPlanEntity>().eq(ShootingPlanEntity::getAiTaskId, taskId));
-    }
+	public SceneAnalysisEntity findSceneForTask(String taskId) {
+		return scenes
+				.selectOne(new LambdaQueryWrapper<SceneAnalysisEntity>().eq(SceneAnalysisEntity::getAiTaskId, taskId));
+	}
 
-    public void saveScene(SceneAnalysisEntity scene) {
-        scenes.insert(scene);
-    }
+	public SceneAnalysisEntity findOwnedScene(String accountId, String sceneAnalysisId) {
+		return scenes.selectOne(new LambdaQueryWrapper<SceneAnalysisEntity>()
+				.eq(SceneAnalysisEntity::getId, sceneAnalysisId).eq(SceneAnalysisEntity::getAccountId, accountId));
+	}
 
-    public void savePlan(ShootingPlanEntity plan) {
-        plans.insert(plan);
-    }
+	public ShootingPlanEntity findPlanForTask(String taskId) {
+		return plans
+				.selectOne(new LambdaQueryWrapper<ShootingPlanEntity>().eq(ShootingPlanEntity::getAiTaskId, taskId));
+	}
+
+	public void saveScene(SceneAnalysisEntity scene) {
+		scenes.insert(scene);
+	}
+
+	public void savePlan(ShootingPlanEntity plan) {
+		plans.insert(plan);
+	}
+
 }

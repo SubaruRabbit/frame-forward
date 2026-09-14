@@ -1,4 +1,5 @@
 package com.frameforward.shooting.controller;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,13 +15,17 @@ import com.frameforward.shooting.service.SceneAnalysisService;
 @RestController
 @RequestMapping("/scene-analyses")
 public class SceneAnalysisController {
-    private final SceneAnalysisService analyses;
-    public SceneAnalysisController(SceneAnalysisService analyses) {
-        this.analyses = analyses;
-    }
-    @PostMapping
-    ResponseEntity<AiTaskCreated> create(@RequestHeader(name = "Authorization", required = false) String authorization,
-            @RequestHeader("Idempotency-Key") String key, @RequestBody SceneAnalysisRequest request) {
-        return ResponseEntity.accepted().body(analyses.create(AuthService.bearer(authorization), key, request));
-    }
+
+	private final SceneAnalysisService analyses;
+
+	public SceneAnalysisController(SceneAnalysisService analyses) {
+		this.analyses = analyses;
+	}
+
+	@PostMapping
+	ResponseEntity<AiTaskCreated> create(@RequestHeader(name = "Authorization", required = false) String authorization,
+			@RequestHeader("Idempotency-Key") String key, @RequestBody SceneAnalysisRequest request) {
+		return ResponseEntity.accepted().body(analyses.create(AuthService.bearer(authorization), key, request));
+	}
+
 }

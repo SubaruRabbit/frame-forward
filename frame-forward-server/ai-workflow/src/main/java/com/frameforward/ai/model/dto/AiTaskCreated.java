@@ -1,4 +1,6 @@
 package com.frameforward.ai.model.dto;
 
-public record AiTaskCreated(String taskId, AiTaskState state) {
+public record AiTaskCreated(
+		String taskId,
+		AiTaskState state) {
 }

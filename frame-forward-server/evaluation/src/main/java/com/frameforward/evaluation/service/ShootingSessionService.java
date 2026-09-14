@@ -1,4 +1,5 @@
 package com.frameforward.evaluation.service;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -15,31 +16,40 @@ import com.frameforward.shooting.model.entity.ShootingPlanEntity;
 
 @Service
 public class ShootingSessionService {
-    private final AuthService auth;
-    private final ShootingSessionManager manager;
-    public ShootingSessionService(AuthService auth, ShootingSessionManager manager) {
-        this.auth = auth;
-        this.manager = manager;
-    }
-    @Transactional
-    public ShootingSessionEntity create(String token, ShootingSessionRequest request) {
-        if (request == null || blank(request.shootingPlanId) || blank(request.planContext))
-            throw new ShootingSessionInvalid();
-        String account = auth.requireAccountId(token);
-        ShootingPlanEntity plan = manager.findOwnedPlan(account, request.shootingPlanId);
-        if (plan == null)
-            throw new ShootingSessionNotFound();
-        ShootingSessionEntity session = new ShootingSessionEntity();
-        session.id = UUID.randomUUID().toString();
-        session.accountId = account;
-        session.shootingPlanId = plan.id;
-        session.planContext = request.planContext;
-        session.createdAt = Instant.now();
-        manager.save(session);
-        return session;
-    }
-    private static boolean blank(String value) {
-        return value == null || value.isBlank();
-    }
+
+	private final AuthService auth;
+
+	private final ShootingSessionManager manager;
+
+	public ShootingSessionService(AuthService auth, ShootingSessionManager manager) {
+		this.auth = auth;
+		this.manager = manager;
+	}
+
+	@Transactional
+	public ShootingSessionEntity create(String token, ShootingSessionRequest request) {
+
+		if (request == null || blank(request.shootingPlanId) || blank(request.planContext)) {
+			throw new ShootingSessionInvalid();
+		}
+		String account = auth.requireAccountId(token);
+		ShootingPlanEntity plan = manager.findOwnedPlan(account, request.shootingPlanId);
+
+		if (plan == null) {
+			throw new ShootingSessionNotFound();
+		}
+		ShootingSessionEntity session = new ShootingSessionEntity();
+		session.id = UUID.randomUUID().toString();
+		session.accountId = account;
+		session.shootingPlanId = plan.id;
+		session.planContext = request.planContext;
+		session.createdAt = Instant.now();
+		manager.save(session);
+		return session;
+	}
+
+	private static boolean blank(String value) {
+		return value == null || value.isBlank();
+	}
 
 }

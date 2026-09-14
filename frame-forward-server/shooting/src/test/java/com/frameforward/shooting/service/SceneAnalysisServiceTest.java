@@ -1,4 +1,5 @@
 package com.frameforward.shooting.service;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -18,50 +19,52 @@ import com.frameforward.shooting.manager.ShootingManager;
 import com.frameforward.shooting.model.dto.SceneAnalysisRequest;
 
 class SceneAnalysisServiceTest {
-    @Test
-    void acceptsCompleteRequestBeforeCheckingMediaOwnership() {
-        var auth = mock(AuthService.class);
-        when(auth.requireAccountId("token")).thenReturn("account-1");
-        var service = service(auth);
 
-        assertThrows(SceneAnalysisMediaNotOwned.class, () -> service.create("token", "request-1", request(1)));
+	@Test
+	void acceptsCompleteRequestBeforeCheckingMediaOwnership() {
+		var auth = mock(AuthService.class);
+		when(auth.requireAccountId("token")).thenReturn("account-1");
+		var service = service(auth);
 
-        verify(auth).requireAccountId("token");
-    }
+		assertThrows(SceneAnalysisMediaNotOwned.class, () -> service.create("token", "request-1", request(1)));
 
-    @Test
-    void rejectsMissingRequiredFieldWithoutAuthenticating() {
-        var auth = mock(AuthService.class);
-        var request = request(30);
-        request.subject = " ";
+		verify(auth).requireAccountId("token");
+	}
 
-        assertThrows(SceneAnalysisInvalidRequest.class, () -> service(auth).create("token", "request-1", request));
+	@Test
+	void rejectsMissingRequiredFieldWithoutAuthenticating() {
+		var auth = mock(AuthService.class);
+		var request = request(30);
+		request.subject = " ";
 
-        verifyNoInteractions(auth);
-    }
+		assertThrows(SceneAnalysisInvalidRequest.class, () -> service(auth).create("token", "request-1", request));
 
-    @Test
-    void rejectsTimeConstraintOutsideSupportedBounds() {
-        var service = service(mock(AuthService.class));
+		verifyNoInteractions(auth);
+	}
 
-        assertThrows(SceneAnalysisInvalidRequest.class, () -> service.create("token", "request-1", request(0)));
-        assertThrows(SceneAnalysisInvalidRequest.class, () -> service.create("token", "request-1", request(1441)));
-    }
+	@Test
+	void rejectsTimeConstraintOutsideSupportedBounds() {
+		var service = service(mock(AuthService.class));
 
-    private static SceneAnalysisService service(AuthService auth) {
-        ShootingBusiness business = new ShootingBusiness(mock(ShootingManager.class), new ObjectMapper());
-        return new SceneAnalysisService(auth, mock(MediaManager.class), mock(UserEquipmentService.class),
-                mock(AiTaskRuntime.class), business);
-    }
+		assertThrows(SceneAnalysisInvalidRequest.class, () -> service.create("token", "request-1", request(0)));
+		assertThrows(SceneAnalysisInvalidRequest.class, () -> service.create("token", "request-1", request(1441)));
+	}
 
-    private static SceneAnalysisRequest request(int timeConstraintMinutes) {
-        var request = new SceneAnalysisRequest();
-        request.environmentMediaId = "media-1";
-        request.subjectType = "PORTRAIT";
-        request.subject = "人物";
-        request.targetStyle = "自然";
-        request.timeConstraintMinutes = timeConstraintMinutes;
-        request.equipmentIds = List.of();
-        return request;
-    }
+	private static SceneAnalysisService service(AuthService auth) {
+		ShootingBusiness business = new ShootingBusiness(mock(ShootingManager.class), new ObjectMapper());
+		return new SceneAnalysisService(auth, mock(MediaManager.class), mock(UserEquipmentService.class),
+				mock(AiTaskRuntime.class), business);
+	}
+
+	private static SceneAnalysisRequest request(int timeConstraintMinutes) {
+		var request = new SceneAnalysisRequest();
+		request.environmentMediaId = "media-1";
+		request.subjectType = "PORTRAIT";
+		request.subject = "人物";
+		request.targetStyle = "自然";
+		request.timeConstraintMinutes = timeConstraintMinutes;
+		request.equipmentIds = List.of();
+		return request;
+	}
+
 }
