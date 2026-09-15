@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Primary;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.frameforward.auth.gateway.AccountDataCleanup;
+import com.frameforward.media.converter.MediaConverter;
 import com.frameforward.media.gateway.WorkMediaCleanup;
 import com.frameforward.media.manager.MediaManager;
 
@@ -24,6 +26,7 @@ class MediaServiceRegistrationTest {
 
 		try (var context = new AnnotationConfigApplicationContext()) {
 			context.registerBean(MediaManager.class, () -> mock(MediaManager.class));
+			context.registerBean(MediaConverter.class, () -> Mappers.getMapper(MediaConverter.class));
 			context.registerBean(ObjectMapper.class, () -> new ObjectMapper());
 			context.scan("com.frameforward.media.service");
 			context.refresh();

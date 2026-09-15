@@ -5,11 +5,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 
 import com.frameforward.evaluation.gateway.WorkEvaluationCleanup;
 import com.frameforward.media.gateway.WorkMediaCleanup;
 import com.frameforward.portfolio.business.PortfolioBusiness;
 import com.frameforward.portfolio.business.PortfolioNotFound;
+import com.frameforward.portfolio.converter.PortfolioConverter;
 import com.frameforward.portfolio.mapper.PortfolioFavoriteMapper;
 import com.frameforward.portfolio.mapper.PortfolioWorkDeletionJobMapper;
 import com.frameforward.portfolio.model.entity.PortfolioFavoriteEntity;
@@ -54,7 +56,7 @@ class PortfolioManagerTest {
 	@Test
 	void businessRejectsMissingOrDeletingWorkAndHandlesJobStates() {
 		var manager = mock(PortfolioManager.class);
-		var business = new PortfolioBusiness(manager);
+		var business = new PortfolioBusiness(manager, Mappers.getMapper(PortfolioConverter.class));
 		when(manager.deletionStarted("account", "media")).thenReturn(true);
 		assertThrows(PortfolioNotFound.class, () -> business.setFavorite("account", "media", true, true));
 		when(manager.deletionStarted("account", "media")).thenReturn(false);

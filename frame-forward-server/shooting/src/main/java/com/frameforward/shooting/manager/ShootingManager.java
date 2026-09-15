@@ -9,14 +9,13 @@ import com.frameforward.shooting.model.entity.SceneAnalysisEntity;
 import com.frameforward.shooting.model.entity.ShootingPlanEntity;
 import com.frameforward.shooting.repository.ShootingRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class ShootingManager {
 
 	private final ShootingRepository repository;
-
-	public ShootingManager(ShootingRepository repository) {
-		this.repository = repository;
-	}
 
 	public void persistSceneIfAbsent(String accountId, String environmentMediaId, String subjectType, String subject,
 			String targetStyle, Integer timeConstraintMinutes, String equipmentSnapshotJson, String taskId) {

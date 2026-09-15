@@ -8,14 +8,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.frameforward.auth.service.AuthService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
+@RequiredArgsConstructor
 public class ProtectedResourceController {
 
 	private final AuthService auth;
-
-	public ProtectedResourceController(AuthService auth) {
-		this.auth = auth;
-	}
 
 	@GetMapping("/test/protected")
 	Map<String, String> protectedResource(

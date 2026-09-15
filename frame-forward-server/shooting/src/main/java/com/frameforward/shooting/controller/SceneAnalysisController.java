@@ -12,15 +12,14 @@ import com.frameforward.auth.service.AuthService;
 import com.frameforward.shooting.model.dto.SceneAnalysisRequest;
 import com.frameforward.shooting.service.SceneAnalysisService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/scene-analyses")
+@RequiredArgsConstructor
 public class SceneAnalysisController {
 
 	private final SceneAnalysisService analyses;
-
-	public SceneAnalysisController(SceneAnalysisService analyses) {
-		this.analyses = analyses;
-	}
 
 	@PostMapping
 	ResponseEntity<AiTaskCreated> create(@RequestHeader(name = "Authorization", required = false) String authorization,

@@ -2,19 +2,19 @@ package com.frameforward.portfolio.business;
 
 import org.springframework.stereotype.Component;
 
+import com.frameforward.portfolio.converter.PortfolioConverter;
 import com.frameforward.portfolio.manager.PortfolioManager;
 import com.frameforward.portfolio.model.dto.DeletionJob;
 import com.frameforward.portfolio.model.dto.Favorite;
 import com.frameforward.portfolio.model.entity.PortfolioWorkDeletionJobEntity;
 
 @Component
+@lombok.RequiredArgsConstructor
 public class PortfolioBusiness {
 
 	private final PortfolioManager manager;
 
-	public PortfolioBusiness(PortfolioManager manager) {
-		this.manager = manager;
-	}
+	private final PortfolioConverter converter;
 
 	public boolean favorite(String accountId, String mediaId) {
 		return manager.favorite(accountId, mediaId);
@@ -47,7 +47,7 @@ public class PortfolioBusiness {
 		if (!"COMPLETED".equals(job.state)) {
 			manager.processDeletion(job);
 		}
-		return deletionJob(job);
+		return converter.toDeletionJob(job);
 	}
 
 	public DeletionJob deletionStatus(String accountId, String jobId) {
@@ -56,11 +56,7 @@ public class PortfolioBusiness {
 		if (job == null) {
 			throw new PortfolioNotFound();
 		}
-		return deletionJob(job);
-	}
-
-	private static DeletionJob deletionJob(PortfolioWorkDeletionJobEntity job) {
-		return new DeletionJob(job.id, job.mediaId, job.state, job.failureReason);
+		return converter.toDeletionJob(job);
 	}
 
 }

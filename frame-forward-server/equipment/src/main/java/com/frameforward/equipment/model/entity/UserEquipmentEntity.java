@@ -3,7 +3,18 @@ package com.frameforward.equipment.model.entity;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 @TableName("user_equipment")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserEquipmentEntity {
 
 	@TableId
@@ -19,40 +30,7 @@ public class UserEquipmentEntity {
 
 	public boolean isPrimary;
 
-	public UserEquipmentEntity() {
-	}
-
-	public UserEquipmentEntity(String id, String accountId, String kind, String catalogItemId, String nickname,
-			boolean isPrimary) {
-		this.id = id;
-		this.accountId = accountId;
-		this.kind = kind;
-		this.catalogItemId = catalogItemId;
-		this.nickname = nickname;
-		this.isPrimary = isPrimary;
-	}
-
-	public String getAccountId() {
-		return accountId;
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public String getKind() {
-		return kind;
-	}
-
-	public String getCatalogItemId() {
-		return catalogItemId;
-	}
-
 	public boolean getIsPrimary() {
-		return isPrimary;
-	}
-
-	public boolean isPrimary() {
 		return isPrimary;
 	}
 

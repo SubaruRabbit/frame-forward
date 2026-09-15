@@ -16,10 +16,13 @@ import com.frameforward.equipment.model.entity.CameraEntity;
 import com.frameforward.equipment.model.entity.LensEntity;
 import com.frameforward.equipment.model.entity.UserEquipmentEntity;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * 集中器材目录和用户器材的持久化访问。
  */
 @Repository
+@RequiredArgsConstructor
 public class EquipmentRepository {
 
 	private final UserEquipmentMapper equipment;
@@ -29,14 +32,6 @@ public class EquipmentRepository {
 	private final LensMapper lenses;
 
 	private final AccessoryTypeMapper accessories;
-
-	public EquipmentRepository(UserEquipmentMapper equipment, CameraMapper cameras, LensMapper lenses,
-			AccessoryTypeMapper accessories) {
-		this.equipment = equipment;
-		this.cameras = cameras;
-		this.lenses = lenses;
-		this.accessories = accessories;
-	}
 
 	public List<CameraEntity> cameras() {
 		return cameras.selectList(new QueryWrapper<CameraEntity>().orderByAsc("brand", "model"));

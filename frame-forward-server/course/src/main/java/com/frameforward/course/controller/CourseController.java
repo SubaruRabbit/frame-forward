@@ -15,13 +15,10 @@ import com.frameforward.course.service.CourseService;
 
 @RestController
 @RequestMapping("/courses")
+@lombok.RequiredArgsConstructor
 public class CourseController {
 
 	private final CourseService courses;
-
-	public CourseController(CourseService courses) {
-		this.courses = courses;
-	}
 
 	@GetMapping
 	public List<Course> catalog(@RequestHeader(name = "Authorization", required = false) String authorization) {

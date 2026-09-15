@@ -10,17 +10,15 @@ import com.frameforward.ai.model.dto.AiTaskCompletionContext;
 import com.frameforward.generation.manager.ReferenceImageManager;
 import com.frameforward.media.service.MediaService;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class ReferenceImageCompletionProcessor extends AiTaskCompletionProcessor {
 
 	private final ReferenceImageManager manager;
 
 	private final MediaService media;
-
-	public ReferenceImageCompletionProcessor(ReferenceImageManager manager, MediaService media) {
-		this.manager = manager;
-		this.media = media;
-	}
 
 	public boolean supports(String operationType) {
 		return "reference-image-generation".equals(operationType);

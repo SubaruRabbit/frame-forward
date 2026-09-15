@@ -25,6 +25,7 @@ import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.frameforward.auth.gateway.AccountDataCleanup;
+import com.frameforward.media.converter.MediaConverter;
 import com.frameforward.media.gateway.WorkMediaCleanup;
 import com.frameforward.media.manager.MediaManager;
 import com.frameforward.media.model.dto.MediaResponse;
@@ -39,12 +40,16 @@ public class MediaService implements WorkMediaCleanup, AccountDataCleanup {
 
 	private final MediaManager media;
 
+	private final MediaConverter converter;
+
 	private final Path root;
 
 	private final ObjectMapper json = new ObjectMapper();
 
-	public MediaService(MediaManager media, @Value("${frame-forward.media.storage-root:./var/media}") String root) {
+	public MediaService(MediaManager media, MediaConverter converter,
+			@Value("${frame-forward.media.storage-root:./var/media}") String root) {
 		this.media = media;
+		this.converter = converter;
 		this.root = Paths.get(root).toAbsolutePath().normalize();
 	}
 
@@ -214,7 +219,7 @@ public class MediaService implements WorkMediaCleanup, AccountDataCleanup {
 	}
 
 	private MediaResponse response(MediaEntity e) {
-		return new MediaResponse(e.id, e.width, e.height, e.contentHash, "COMPLETED", e.exifJson);
+		return converter.toResponse(e);
 	}
 
 	private static void copyBounded(InputStream in, Path target) throws IOException {

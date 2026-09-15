@@ -11,6 +11,7 @@ import com.frameforward.course.model.entity.CourseContentVersionEntity;
 import com.frameforward.course.model.entity.LessonProgressEntity;
 
 @Repository
+@lombok.RequiredArgsConstructor
 public class CourseRepository {
 
 	private final CourseContentVersionMapper versions;
@@ -18,13 +19,6 @@ public class CourseRepository {
 	private final LessonProgressMapper progress;
 
 	private final AssignmentFeedbackMapper feedback;
-
-	public CourseRepository(CourseContentVersionMapper versions, LessonProgressMapper progress,
-			AssignmentFeedbackMapper feedback) {
-		this.versions = versions;
-		this.progress = progress;
-		this.feedback = feedback;
-	}
 
 	public CourseContentVersionEntity findVersion(String courseId, String contentVersion) {
 		return versions.selectOne(new LambdaQueryWrapper<CourseContentVersionEntity>()

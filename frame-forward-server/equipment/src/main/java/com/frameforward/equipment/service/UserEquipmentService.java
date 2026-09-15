@@ -9,15 +9,14 @@ import com.frameforward.equipment.business.UserEquipmentBusiness;
 import com.frameforward.equipment.model.dto.BodyLensCombination;
 import com.frameforward.equipment.model.dto.UserEquipmentItem;
 
+import lombok.RequiredArgsConstructor;
+
 /** 用户器材用例入口。 */
 @Service
+@RequiredArgsConstructor
 public class UserEquipmentService {
 
 	private final UserEquipmentBusiness business;
-
-	public UserEquipmentService(UserEquipmentBusiness business) {
-		this.business = business;
-	}
 
 	public List<UserEquipmentItem> list(String accountId) {
 		return business.list(accountId);

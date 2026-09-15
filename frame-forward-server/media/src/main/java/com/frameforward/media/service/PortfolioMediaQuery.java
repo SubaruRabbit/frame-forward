@@ -10,18 +10,16 @@ import com.frameforward.media.manager.MediaManager;
 import com.frameforward.media.model.dto.PortfolioMediaItem;
 import com.frameforward.media.model.entity.MediaEntity;
 
+import lombok.RequiredArgsConstructor;
+
 /** 为作品集提供已授权媒体的只读投影，避免跨模块访问媒体表。 */
 @Component
+@RequiredArgsConstructor
 public class PortfolioMediaQuery {
 
 	private final MediaManager media;
 
 	private final ObjectMapper json;
-
-	public PortfolioMediaQuery(MediaManager media, ObjectMapper json) {
-		this.media = media;
-		this.json = json;
-	}
 
 	public List<PortfolioMediaItem> listOwned(String accountId) {
 		return media.listOwnedDescending(accountId).stream().map(this::item).toList();

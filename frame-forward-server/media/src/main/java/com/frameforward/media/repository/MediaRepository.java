@@ -8,15 +8,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.frameforward.media.mapper.MediaMapper;
 import com.frameforward.media.model.entity.MediaEntity;
 
+import lombok.RequiredArgsConstructor;
+
 /** 统一协调媒体持久化访问，避免业务服务直接依赖 Mapper。 */
 @Repository
+@RequiredArgsConstructor
 public class MediaRepository {
 
 	private final MediaMapper media;
-
-	public MediaRepository(MediaMapper media) {
-		this.media = media;
-	}
 
 	public MediaEntity findExisting(String ownerId, String contentHash) {
 		return media.selectOne(new LambdaQueryWrapper<MediaEntity>().eq(MediaEntity::getOwnerId, ownerId)

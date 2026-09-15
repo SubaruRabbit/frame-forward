@@ -11,13 +11,10 @@ import com.frameforward.evaluation.service.PhotoEvaluationService;
 
 @RestController
 @RequestMapping("/photo-evaluations")
+@lombok.RequiredArgsConstructor
 public class PhotoEvaluationController {
 
 	private final PhotoEvaluationService evaluations;
-
-	public PhotoEvaluationController(PhotoEvaluationService evaluations) {
-		this.evaluations = evaluations;
-	}
 
 	@PostMapping
 	ResponseEntity<AiTaskCreated> create(@RequestHeader(name = "Authorization", required = false) String authorization,

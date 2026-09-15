@@ -11,15 +11,14 @@ import com.frameforward.ai.model.dto.AiTaskStatus;
 import com.frameforward.ai.service.AiTaskRuntime;
 import com.frameforward.auth.service.AuthService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/ai/tasks")
+@RequiredArgsConstructor
 public class AiTaskController {
 
 	private final AiTaskRuntime runtime;
-
-	public AiTaskController(AiTaskRuntime runtime) {
-		this.runtime = runtime;
-	}
 
 	@PostMapping
 	public ResponseEntity<AiTaskCreated> create(

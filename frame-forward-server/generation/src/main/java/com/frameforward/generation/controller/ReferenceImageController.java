@@ -12,15 +12,14 @@ import com.frameforward.auth.service.AuthService;
 import com.frameforward.generation.model.dto.ReferenceImageRequest;
 import com.frameforward.generation.service.ReferenceImageService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/reference-images")
+@RequiredArgsConstructor
 public class ReferenceImageController {
 
 	private final ReferenceImageService referenceImages;
-
-	public ReferenceImageController(ReferenceImageService referenceImages) {
-		this.referenceImages = referenceImages;
-	}
 
 	@PostMapping
 	ResponseEntity<AiTaskCreated> create(@RequestHeader(name = "Authorization", required = false) String authorization,

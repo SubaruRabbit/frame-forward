@@ -8,15 +8,14 @@ import com.frameforward.auth.service.AuthService;
 import com.frameforward.shooting.model.dto.ShootingPlanRequest;
 import com.frameforward.shooting.service.ShootingPlanService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/shooting-plans")
+@RequiredArgsConstructor
 public class ShootingPlanController {
 
 	private final ShootingPlanService plans;
-
-	public ShootingPlanController(ShootingPlanService plans) {
-		this.plans = plans;
-	}
 
 	@PostMapping
 	ResponseEntity<AiTaskCreated> create(@RequestHeader(name = "Authorization", required = false) String authorization,

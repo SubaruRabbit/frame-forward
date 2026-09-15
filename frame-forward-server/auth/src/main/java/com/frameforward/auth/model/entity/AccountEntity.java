@@ -3,7 +3,18 @@ package com.frameforward.auth.model.entity;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 @TableName("accounts")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AccountEntity {
 
 	@TableId
@@ -14,23 +25,5 @@ public class AccountEntity {
 	public String email;
 
 	public String passwordHash;
-
-	public AccountEntity() {
-	}
-
-	public AccountEntity(String id, String username, String email, String passwordHash) {
-		this.id = id;
-		this.username = username;
-		this.email = email;
-		this.passwordHash = passwordHash;
-	}
-
-	public String getUsername() {
-		return username;
-	}
-
-	public String getEmail() {
-		return email;
-	}
 
 }

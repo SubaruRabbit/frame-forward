@@ -8,17 +8,15 @@ import com.frameforward.shooting.mapper.ShootingPlanMapper;
 import com.frameforward.shooting.model.entity.SceneAnalysisEntity;
 import com.frameforward.shooting.model.entity.ShootingPlanEntity;
 
+import lombok.RequiredArgsConstructor;
+
 @Repository
+@RequiredArgsConstructor
 public class ShootingRepository {
 
 	private final SceneAnalysisMapper scenes;
 
 	private final ShootingPlanMapper plans;
-
-	public ShootingRepository(SceneAnalysisMapper scenes, ShootingPlanMapper plans) {
-		this.scenes = scenes;
-		this.plans = plans;
-	}
 
 	public SceneAnalysisEntity findSceneForTask(String taskId) {
 		return scenes

@@ -5,7 +5,18 @@ import java.time.Instant;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 @TableName("refresh_sessions")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RefreshSessionEntity {
 
 	@TableId
@@ -14,18 +25,5 @@ public class RefreshSessionEntity {
 	public String accountId;
 
 	public Instant expiresAt;
-
-	public RefreshSessionEntity() {
-	}
-
-	public RefreshSessionEntity(String tokenHash, String accountId, Instant expiresAt) {
-		this.tokenHash = tokenHash;
-		this.accountId = accountId;
-		this.expiresAt = expiresAt;
-	}
-
-	public String getAccountId() {
-		return accountId;
-	}
 
 }

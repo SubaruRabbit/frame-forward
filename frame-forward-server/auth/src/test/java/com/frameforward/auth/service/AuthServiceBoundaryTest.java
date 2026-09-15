@@ -14,10 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mapstruct.factory.Mappers;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.frameforward.auth.business.AuthBusiness;
+import com.frameforward.auth.converter.AuthConverter;
 import com.frameforward.auth.manager.AuthManager;
 import com.frameforward.auth.model.entity.AccountDeletionJobEntity;
 import com.frameforward.auth.model.entity.AccountEntity;
@@ -29,7 +31,7 @@ class AuthServiceBoundaryTest {
 
 	private final AuthBusiness business = mock(AuthBusiness.class);
 
-	private final AuthService auth = new AuthService(manager, business);
+	private final AuthService auth = new AuthService(manager, business, Mappers.getMapper(AuthConverter.class));
 
 	private final AccountEntity account = new AccountEntity("account", "user", "user@example.com",
 			new BCryptPasswordEncoder().encode("ValidPass1!"));

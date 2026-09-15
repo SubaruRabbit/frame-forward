@@ -23,13 +23,10 @@ import com.frameforward.portfolio.service.PortfolioService;
 
 @RestController
 @RequestMapping("/portfolio/works")
+@lombok.RequiredArgsConstructor
 public class PortfolioController {
 
 	private final PortfolioService portfolio;
-
-	public PortfolioController(PortfolioService portfolio) {
-		this.portfolio = portfolio;
-	}
 
 	@GetMapping
 	Page list(@RequestHeader(name = "Authorization", required = false) String authorization,

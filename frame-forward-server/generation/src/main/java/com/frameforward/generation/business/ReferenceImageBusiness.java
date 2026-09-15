@@ -9,14 +9,13 @@ import com.frameforward.generation.model.dto.NewReference;
 import com.frameforward.generation.model.dto.ReferenceImageRequest;
 import com.frameforward.shooting.model.entity.ShootingPlanEntity;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class ReferenceImageBusiness {
 
 	private final ReferenceImageManager manager;
-
-	public ReferenceImageBusiness(ReferenceImageManager manager) {
-		this.manager = manager;
-	}
 
 	public void validate(ReferenceImageRequest request) {
 

@@ -8,17 +8,15 @@ import com.frameforward.generation.model.entity.ReferenceImageEntity;
 import com.frameforward.shooting.mapper.ShootingPlanMapper;
 import com.frameforward.shooting.model.entity.ShootingPlanEntity;
 
+import lombok.RequiredArgsConstructor;
+
 @Repository
+@RequiredArgsConstructor
 public class ReferenceImageRepository {
 
 	private final ShootingPlanMapper plans;
 
 	private final ReferenceImageMapper references;
-
-	public ReferenceImageRepository(ShootingPlanMapper plans, ReferenceImageMapper references) {
-		this.plans = plans;
-		this.references = references;
-	}
 
 	public ShootingPlanEntity findOwnedPlan(String accountId, String planId) {
 		return plans.selectOne(new LambdaQueryWrapper<ShootingPlanEntity>().eq(ShootingPlanEntity::getId, planId)

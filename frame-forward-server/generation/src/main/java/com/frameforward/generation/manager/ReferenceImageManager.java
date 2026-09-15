@@ -10,14 +10,13 @@ import com.frameforward.generation.model.entity.ReferenceImageEntity;
 import com.frameforward.generation.repository.ReferenceImageRepository;
 import com.frameforward.shooting.model.entity.ShootingPlanEntity;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class ReferenceImageManager {
 
 	private final ReferenceImageRepository repository;
-
-	public ReferenceImageManager(ReferenceImageRepository repository) {
-		this.repository = repository;
-	}
 
 	public ShootingPlanEntity findOwnedPlan(String accountId, String planId) {
 		return repository.findOwnedPlan(accountId, planId);

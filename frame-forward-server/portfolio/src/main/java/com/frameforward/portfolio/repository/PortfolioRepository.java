@@ -9,16 +9,12 @@ import com.frameforward.portfolio.model.entity.PortfolioFavoriteEntity;
 import com.frameforward.portfolio.model.entity.PortfolioWorkDeletionJobEntity;
 
 @Repository
+@lombok.RequiredArgsConstructor
 public class PortfolioRepository {
 
 	private final PortfolioFavoriteMapper favorites;
 
 	private final PortfolioWorkDeletionJobMapper deletionJobs;
-
-	public PortfolioRepository(PortfolioFavoriteMapper favorites, PortfolioWorkDeletionJobMapper deletionJobs) {
-		this.favorites = favorites;
-		this.deletionJobs = deletionJobs;
-	}
 
 	public long countFavorites(String accountId, String mediaId) {
 		return favorites.selectCount(favoriteQuery(accountId, mediaId));

@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.frameforward.auth.business.AuthBusiness;
 import com.frameforward.auth.business.PasswordPolicy;
 import com.frameforward.auth.component.BearerToken;
+import com.frameforward.auth.converter.AuthConverter;
 import com.frameforward.auth.manager.AuthManager;
 import com.frameforward.auth.model.dto.AccountDeletionJob;
 import com.frameforward.auth.model.dto.SessionTokens;
@@ -26,7 +27,10 @@ import com.frameforward.auth.model.entity.AccountDeletionJobEntity;
 import com.frameforward.auth.model.entity.AccountEntity;
 import com.frameforward.auth.model.entity.RefreshSessionEntity;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
 	private static final Duration ACCESS_TTL = Duration.ofMinutes(15), REFRESH_TTL = Duration.ofDays(30);
@@ -35,16 +39,13 @@ public class AuthService {
 
 	private final AuthBusiness business;
 
+	private final AuthConverter converter;
+
 	private final BCryptPasswordEncoder passwords = new BCryptPasswordEncoder();
 
 	private final Map<String, AccessGrant> accessGrants = new ConcurrentHashMap<>();
 
 	private final Clock clock = Clock.systemUTC();
-
-	public AuthService(AuthManager manager, AuthBusiness business) {
-		this.manager = manager;
-		this.business = business;
-	}
 
 	public static String bearer(String authorization) {
 		String token = BearerToken.parse(authorization);
@@ -139,11 +140,11 @@ public class AuthService {
 		manager.insertDeletionJob(job);
 		revoke(grant.account.id);
 		business.processDeletion(job);
-		return deletionJob(job, deletionToken);
+		return converter.toDeletionJob(job, deletionToken);
 	}
 
 	public AccountDeletionJob deletionStatus(String jobId, String deletionToken) {
-		return deletionJob(authorize(jobId, deletionToken), null);
+		return converter.toDeletionJob(authorize(jobId, deletionToken), null);
 	}
 
 	public AccountDeletionJob retryAccountDeletion(String jobId, String deletionToken) {
@@ -152,7 +153,7 @@ public class AuthService {
 		if (!"COMPLETED".equals(job.state)) {
 			business.processDeletion(job);
 		}
-		return deletionJob(job, null);
+		return converter.toDeletionJob(job, null);
 	}
 
 	private SessionTokens issue(AccountEntity account) {
@@ -192,10 +193,6 @@ public class AuthService {
 			throw new InvalidSessionException();
 		}
 		return job;
-	}
-
-	private static AccountDeletionJob deletionJob(AccountDeletionJobEntity job, String deletionToken) {
-		return new AccountDeletionJob(job.id, job.state, job.failureReason, deletionToken, job.deletionTokenExpiresAt);
 	}
 
 	private String encode(String password) {

@@ -14,17 +14,15 @@ import com.frameforward.shooting.model.dto.SceneAnalysisRequest;
 import com.frameforward.shooting.model.dto.ShootingPlanRequest;
 import com.frameforward.shooting.model.entity.SceneAnalysisEntity;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class ShootingBusiness {
 
 	private final ShootingManager manager;
 
 	private final ObjectMapper json;
-
-	public ShootingBusiness(ShootingManager manager, ObjectMapper json) {
-		this.manager = manager;
-		this.json = json;
-	}
 
 	public void validate(SceneAnalysisRequest request) {
 

@@ -11,18 +11,16 @@ import com.frameforward.ai.model.dto.AiTaskCompletionContext;
 import com.frameforward.ai.model.entity.AiTaskEntity;
 import com.frameforward.ai.repository.AiTaskRepository;
 
+import lombok.RequiredArgsConstructor;
+
 /** 统一协调 AI 任务的持久化访问。 */
 @Component
+@RequiredArgsConstructor
 public class AiTaskManager {
 
 	private final AiTaskRepository tasks;
 
 	private final List<AiTaskCompletionProcessor> completionProcessors;
-
-	public AiTaskManager(AiTaskRepository tasks, List<AiTaskCompletionProcessor> completionProcessors) {
-		this.tasks = tasks;
-		this.completionProcessors = completionProcessors;
-	}
 
 	public void completeResults(AiTaskEntity task, Map<String, Object> result) {
 		var context = new AiTaskCompletionContext(task.id, task.accountId);

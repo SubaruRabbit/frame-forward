@@ -11,8 +11,10 @@ import java.util.Base64;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 
 import com.frameforward.auth.business.AuthBusiness;
+import com.frameforward.auth.converter.AuthConverter;
 import com.frameforward.auth.gateway.AccountDataCleanup;
 import com.frameforward.auth.manager.AuthManager;
 import com.frameforward.auth.mapper.AccountDeletionJobMapper;
@@ -36,7 +38,7 @@ class AccountDeletionRetryTest {
 		AccountDataCleanup cleanup = mock(AccountDataCleanup.class);
 		doThrow(failure).doNothing().when(cleanup).deleteForAccount(any(String.class));
 		AuthManager manager = new AuthManager(new AuthRepository(accounts, sessions, jobs), List.of(cleanup));
-		AuthService auth = new AuthService(manager, new AuthBusiness(manager));
+		AuthService auth = new AuthService(manager, new AuthBusiness(manager), Mappers.getMapper(AuthConverter.class));
 		SessionTokens session = auth.register("retry_user", "retry@example.com", "ValidPass1!");
 
 		AccountDeletionJob failed = auth.startAccountDeletion(session.accessToken(), "ValidPass1!");

@@ -9,18 +9,16 @@ import com.frameforward.media.model.dto.MediaResponse;
 import com.frameforward.media.model.dto.UploadProgress;
 import com.frameforward.media.service.MediaService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/media")
+@RequiredArgsConstructor
 public class MediaController {
 
 	private final MediaService media;
 
 	private final AuthService auth;
-
-	public MediaController(MediaService media, AuthService auth) {
-		this.media = media;
-		this.auth = auth;
-	}
 
 	@PostMapping(value = "/jpeg", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	ResponseEntity<MediaResponse> upload(@RequestHeader(name = "Authorization", required = false) String authorization,

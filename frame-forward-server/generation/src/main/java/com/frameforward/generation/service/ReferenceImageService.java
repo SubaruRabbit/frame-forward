@@ -17,7 +17,10 @@ import com.frameforward.media.manager.MediaManager;
 import com.frameforward.media.model.entity.MediaEntity;
 import com.frameforward.shooting.model.entity.ShootingPlanEntity;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class ReferenceImageService {
 
 	private final AuthService auth;
@@ -27,14 +30,6 @@ public class ReferenceImageService {
 	private final AiTaskRuntime tasks;
 
 	private final ReferenceImageBusiness business;
-
-	public ReferenceImageService(AuthService auth, MediaManager media, AiTaskRuntime tasks,
-			ReferenceImageBusiness business) {
-		this.auth = auth;
-		this.media = media;
-		this.tasks = tasks;
-		this.business = business;
-	}
 
 	@Transactional
 	public AiTaskCreated create(String token, String key, ReferenceImageRequest request) {
@@ -56,9 +51,8 @@ public class ReferenceImageService {
 		if (request.mockOutput != null) {
 			input.put("mockOutput", request.mockOutput);
 		}
-		AiTaskCreateRequest aiRequest = new AiTaskCreateRequest();
-		aiRequest.operationType = "reference-image-generation";
-		aiRequest.input = input;
+		AiTaskCreateRequest aiRequest = AiTaskCreateRequest.builder().operationType("reference-image-generation")
+				.input(input).build();
 		AiTaskCreated task = tasks.create(token, key, aiRequest);
 		business.persistReference(account, scene.id, plan.id, task.taskId(), request.selectedPlan, prompt);
 		return task;

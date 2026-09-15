@@ -11,6 +11,7 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -19,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifIFD0Directory;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
+import com.frameforward.media.converter.MediaConverter;
 import com.frameforward.media.manager.MediaManager;
 import com.frameforward.media.model.entity.MediaEntity;
 
@@ -31,7 +33,7 @@ class MediaServiceBoundaryTest {
 
 	@Test
 	void rejectsEmptyAndUnreadableUploads() throws Exception {
-		var service = new MediaService(manager, root.toString());
+		var service = service(manager, root.toString());
 		assertThatThrownBy(() -> service.ingest("owner", null)).isInstanceOf(MediaService.InvalidMediaException.class);
 		assertThatThrownBy(() -> service.ingest("owner", new MockMultipartFile("file", new byte[0])))
 				.isInstanceOf(MediaService.InvalidMediaException.class);
@@ -44,7 +46,7 @@ class MediaServiceBoundaryTest {
 
 	@Test
 	void rejectsAllInvalidSignaturePositionsAndUndecodableJpeg() {
-		var service = new MediaService(manager, root.toString());
+		var service = service(manager, root.toString());
 
 		for (byte[] bytes : new byte[][] {
 				{
@@ -68,10 +70,9 @@ class MediaServiceBoundaryTest {
 	void duplicateUploadReusesOwnedRecordWithoutSaving() throws Exception {
 		var existing = entity("existing", null, null);
 		when(manager.findExisting(eq("owner"), anyString())).thenReturn(existing);
-		var response = new MediaService(manager, root.toString()).ingest("owner",
-				new MockMultipartFile("file", new byte[] {
-						1
-				}));
+		var response = service(manager, root.toString()).ingest("owner", new MockMultipartFile("file", new byte[] {
+				1
+		}));
 		assertThat(response.id()).isEqualTo("existing");
 		verify(manager, never()).save(any());
 
@@ -82,7 +83,7 @@ class MediaServiceBoundaryTest {
 
 	@Test
 	void generatedRegistrationAndProgressPreserveMetadataAndOwnership() {
-		var service = new MediaService(manager, root.toString());
+		var service = service(manager, root.toString());
 		var response = service.registerGenerated("owner", "https://example.test/image.jpg", 20, 10);
 		var saved = ArgumentCaptor.forClass(MediaEntity.class);
 		verify(manager).save(saved.capture());
@@ -100,7 +101,7 @@ class MediaServiceBoundaryTest {
 	void cleanupSkipsMissingRemoteBlankAndOutsideRootFiles() throws Exception {
 		var managed = root.resolve("managed");
 		var outside = Files.writeString(root.resolve("outside.jpg"), "keep");
-		var service = new MediaService(manager, managed.toString());
+		var service = service(manager, managed.toString());
 		service.deleteForWork("owner", "missing");
 		verify(manager, never()).delete(anyString());
 
@@ -119,7 +120,7 @@ class MediaServiceBoundaryTest {
 		Path nonEmpty = Files.createDirectory(root.resolve("non-empty"));
 		Files.writeString(nonEmpty.resolve("child"), "keep");
 		when(manager.findOwnedEntity("owner", "id")).thenReturn(entity("id", nonEmpty.toString(), null));
-		assertThatThrownBy(() -> new MediaService(manager, root.toString()).deleteForWork("owner", "id"))
+		assertThatThrownBy(() -> service(manager, root.toString()).deleteForWork("owner", "id"))
 				.isInstanceOf(MediaService.CleanupFailedException.class).hasCauseInstanceOf(IOException.class);
 		verify(manager, never()).delete(anyString());
 	}
@@ -148,13 +149,16 @@ class MediaServiceBoundaryTest {
 		var exif = new ExifSubIFDDirectory();
 		exif.setInt(ExifSubIFDDirectory.TAG_ISO_EQUIVALENT, 200);
 		metadata.addDirectory(exif);
-		String json = ReflectionTestUtils.invokeMethod(new MediaService(manager, root.toString()), "allowedExif",
-				metadata);
+		String json = ReflectionTestUtils.invokeMethod(service(manager, root.toString()), "allowedExif", metadata);
 		assertThat(json).contains("\"iso\":\"200\"").doesNotContain("orientation", "capturedAt");
 	}
 
 	private static MediaEntity entity(String id, String original, String copy) {
 		return new MediaEntity(id, "owner", "hash", 20, 10, original, copy, "{}");
+	}
+
+	private static MediaService service(MediaManager manager, String root) {
+		return new MediaService(manager, Mappers.getMapper(MediaConverter.class), root);
 	}
 
 }

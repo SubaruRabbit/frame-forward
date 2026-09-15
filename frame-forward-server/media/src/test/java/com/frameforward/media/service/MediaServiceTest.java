@@ -18,16 +18,18 @@ import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
 
+import com.frameforward.media.converter.MediaConverter;
 import com.frameforward.media.manager.MediaManager;
 import com.frameforward.media.model.dto.MediaResponse;
 import com.frameforward.media.model.entity.MediaEntity;
 
 class MediaServiceTest {
 
-	private final MediaService service = new MediaService(mock(MediaManager.class), "target/test-media");
+	private final MediaService service = service(mock(MediaManager.class), "target/test-media");
 
 	@Test
 	void rejectsCorruptJpeg() {
@@ -46,7 +48,7 @@ class MediaServiceTest {
 		MediaManager manager = mock(MediaManager.class);
 		var file = new MockMultipartFile("file", "photo.jpg", "image/jpeg", jpeg(12, 8));
 
-		MediaResponse response = new MediaService(manager, root.toString()).ingest("owner", file);
+		MediaResponse response = service(manager, root.toString()).ingest("owner", file);
 
 		ArgumentCaptor<MediaEntity> saved = ArgumentCaptor.forClass(MediaEntity.class);
 		verify(manager).save(saved.capture());
@@ -60,7 +62,7 @@ class MediaServiceTest {
 	@Test
 	void cannotFetchAnotherOwnersMedia() {
 		MediaManager manager = mock(MediaManager.class);
-		MediaService owned = new MediaService(manager, "target/test-media");
+		MediaService owned = service(manager, "target/test-media");
 		when(manager.findOwnedEntity("different-owner", "media-id")).thenReturn(null);
 		assertThrows(MediaService.NotFoundException.class, () -> owned.get("different-owner", "media-id"));
 	}
@@ -85,7 +87,7 @@ class MediaServiceTest {
 				derivative.toString(), "{}");
 		when(manager.findOwnedEntity("owner", "target")).thenReturn(target);
 
-		new MediaService(manager, root.toString()).deleteForWork("owner", "target");
+		service(manager, root.toString()).deleteForWork("owner", "target");
 
 		Assertions.assertFalse(Files.exists(original));
 		Assertions.assertFalse(Files.exists(derivative));
@@ -104,7 +106,7 @@ class MediaServiceTest {
 		when(manager.listOwned("owner")).thenReturn(List.of(one, two));
 		when(manager.findOwnedEntity("owner", "one")).thenReturn(one);
 		when(manager.findOwnedEntity("owner", "two")).thenReturn(two);
-		new MediaService(manager, root.toString()).deleteForAccount("owner");
+		service(manager, root.toString()).deleteForAccount("owner");
 		Assertions.assertFalse(Files.exists(first));
 		Assertions.assertFalse(Files.exists(second));
 		Assertions.assertTrue(Files.exists(shared));
@@ -116,6 +118,10 @@ class MediaServiceTest {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		assertTrue(ImageIO.write(new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB), "jpeg", output));
 		return output.toByteArray();
+	}
+
+	private static MediaService service(MediaManager manager, String root) {
+		return new MediaService(manager, Mappers.getMapper(MediaConverter.class), root);
 	}
 
 }

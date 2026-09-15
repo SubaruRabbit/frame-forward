@@ -10,13 +10,10 @@ import com.frameforward.evaluation.service.ShootingSessionService;
 
 @RestController
 @RequestMapping("/shooting-sessions")
+@lombok.RequiredArgsConstructor
 public class ShootingSessionController {
 
 	private final ShootingSessionService sessions;
-
-	public ShootingSessionController(ShootingSessionService sessions) {
-		this.sessions = sessions;
-	}
 
 	@PostMapping
 	ResponseEntity<ShootingSessionEntity> create(

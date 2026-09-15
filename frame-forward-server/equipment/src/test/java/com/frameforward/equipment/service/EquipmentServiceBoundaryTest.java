@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DuplicateKeyException;
 
@@ -16,6 +17,7 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.frameforward.equipment.business.*;
+import com.frameforward.equipment.converter.EquipmentConverter;
 import com.frameforward.equipment.manager.EquipmentManager;
 import com.frameforward.equipment.mapper.*;
 import com.frameforward.equipment.model.entity.*;
@@ -40,9 +42,12 @@ class EquipmentServiceBoundaryTest {
 	private final EquipmentManager manager = new EquipmentManager(
 			new EquipmentRepository(owned, cameras, lenses, accessories));
 
-	private final UserEquipmentService service = new UserEquipmentService(new UserEquipmentBusiness(manager));
+	private final EquipmentConverter converter = Mappers.getMapper(EquipmentConverter.class);
 
-	private final CatalogService catalog = new CatalogService(manager);
+	private final UserEquipmentService service = new UserEquipmentService(
+			new UserEquipmentBusiness(manager, converter));
+
+	private final CatalogService catalog = new CatalogService(manager, converter);
 
 	@Test
 	void catalogMapsEntitiesAndKeepsBrandFiltering() {

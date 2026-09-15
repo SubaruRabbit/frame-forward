@@ -9,10 +9,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 import org.mockito.Mockito;
 
 import com.frameforward.evaluation.gateway.WorkEvaluationCleanup;
 import com.frameforward.media.gateway.WorkMediaCleanup;
+import com.frameforward.portfolio.converter.PortfolioConverter;
 import com.frameforward.portfolio.manager.PortfolioManager;
 import com.frameforward.portfolio.mapper.PortfolioFavoriteMapper;
 import com.frameforward.portfolio.mapper.PortfolioWorkDeletionJobMapper;
@@ -33,7 +35,8 @@ class PortfolioBusinessTest {
 	private final WorkMediaCleanup mediaCleanup = mock(WorkMediaCleanup.class);
 
 	private final PortfolioBusiness business = new PortfolioBusiness(
-			new PortfolioManager(new PortfolioRepository(favorites, deletionJobs), evaluationCleanup, mediaCleanup));
+			new PortfolioManager(new PortfolioRepository(favorites, deletionJobs), evaluationCleanup, mediaCleanup),
+			Mappers.getMapper(PortfolioConverter.class));
 
 	@Test
     void createsFavoriteOnlyWhenItDoesNotAlreadyExist() {

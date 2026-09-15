@@ -15,16 +15,12 @@ import com.frameforward.evaluation.model.entity.ShootingSessionEntity;
 import com.frameforward.shooting.model.entity.ShootingPlanEntity;
 
 @Service
+@lombok.RequiredArgsConstructor
 public class ShootingSessionService {
 
 	private final AuthService auth;
 
 	private final ShootingSessionManager manager;
-
-	public ShootingSessionService(AuthService auth, ShootingSessionManager manager) {
-		this.auth = auth;
-		this.manager = manager;
-	}
 
 	@Transactional
 	public ShootingSessionEntity create(String token, ShootingSessionRequest request) {

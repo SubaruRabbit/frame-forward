@@ -7,14 +7,13 @@ import org.springframework.stereotype.Component;
 import com.frameforward.media.model.entity.MediaEntity;
 import com.frameforward.media.repository.MediaRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class MediaManager {
 
 	private final MediaRepository repository;
-
-	public MediaManager(MediaRepository repository) {
-		this.repository = repository;
-	}
 
 	public MediaEntity findExisting(String ownerId, String contentHash) {
 		return repository.findExisting(ownerId, contentHash);

@@ -19,18 +19,16 @@ import com.frameforward.equipment.model.dto.UserEquipmentItem;
 import com.frameforward.equipment.model.dto.UserEquipmentList;
 import com.frameforward.equipment.service.UserEquipmentService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/equipment")
+@RequiredArgsConstructor
 public class UserEquipmentController {
 
 	private final UserEquipmentService equipment;
 
 	private final AuthService auth;
-
-	public UserEquipmentController(UserEquipmentService equipment, AuthService auth) {
-		this.equipment = equipment;
-		this.auth = auth;
-	}
 
 	@GetMapping
 	UserEquipmentList list(@RequestHeader(name = "Authorization", required = false) String authorization) {

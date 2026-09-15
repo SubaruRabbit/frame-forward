@@ -11,13 +11,10 @@ import com.frameforward.evaluation.model.entity.PhotoEvaluationEntity;
 import com.frameforward.media.model.entity.MediaEntity;
 
 @Component
+@lombok.RequiredArgsConstructor
 public class EvaluationBusiness {
 
 	private final EvaluationManager manager;
-
-	public EvaluationBusiness(EvaluationManager manager) {
-		this.manager = manager;
-	}
 
 	public void validate(PhotoEvaluationRequest request) {
 

@@ -12,13 +12,10 @@ import com.frameforward.portfolio.service.PortfolioService;
 
 @RestController
 @RequestMapping("/portfolio/work-deletions")
+@lombok.RequiredArgsConstructor
 public class PortfolioWorkDeletionController {
 
 	private final PortfolioService portfolio;
-
-	public PortfolioWorkDeletionController(PortfolioService portfolio) {
-		this.portfolio = portfolio;
-	}
 
 	@GetMapping("/{jobId}")
 	DeletionJob status(@RequestHeader(name = "Authorization", required = false) String authorization,

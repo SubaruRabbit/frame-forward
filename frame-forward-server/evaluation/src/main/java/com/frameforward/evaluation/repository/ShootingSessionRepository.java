@@ -9,16 +9,12 @@ import com.frameforward.shooting.mapper.ShootingPlanMapper;
 import com.frameforward.shooting.model.entity.ShootingPlanEntity;
 
 @Repository
+@lombok.RequiredArgsConstructor
 public class ShootingSessionRepository {
 
 	private final ShootingPlanMapper plans;
 
 	private final ShootingSessionMapper sessions;
-
-	public ShootingSessionRepository(ShootingPlanMapper plans, ShootingSessionMapper sessions) {
-		this.plans = plans;
-		this.sessions = sessions;
-	}
 
 	public ShootingPlanEntity findOwnedPlan(String accountId, String planId) {
 		return plans.selectOne(new LambdaQueryWrapper<ShootingPlanEntity>().eq(ShootingPlanEntity::getId, planId)

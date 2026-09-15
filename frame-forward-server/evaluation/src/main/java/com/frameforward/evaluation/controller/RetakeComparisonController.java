@@ -11,13 +11,10 @@ import com.frameforward.evaluation.service.RetakeComparisonService;
 
 @RestController
 @RequestMapping("/retake-comparisons")
+@lombok.RequiredArgsConstructor
 public class RetakeComparisonController {
 
 	private final RetakeComparisonService comparisons;
-
-	public RetakeComparisonController(RetakeComparisonService comparisons) {
-		this.comparisons = comparisons;
-	}
 
 	@PostMapping
 	ResponseEntity<Map<String, Object>> create(

@@ -9,13 +9,10 @@ import com.frameforward.evaluation.manager.EvaluationManager;
 /** 仅清理绑定到指定作品的评测及其重拍关联，不触碰其他作品的评测结果。 */
 @Component
 @Primary
+@lombok.RequiredArgsConstructor
 public class EvaluationWorkCleanup implements WorkEvaluationCleanup {
 
 	private final EvaluationManager manager;
-
-	public EvaluationWorkCleanup(EvaluationManager manager) {
-		this.manager = manager;
-	}
 
 	@Override
 	public void deleteForWork(String accountId, String mediaId) {

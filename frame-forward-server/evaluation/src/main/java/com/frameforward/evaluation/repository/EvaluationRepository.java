@@ -13,6 +13,7 @@ import com.frameforward.evaluation.model.entity.RetakeLinkEntity;
 import com.frameforward.evaluation.model.entity.ShootingSessionEntity;
 
 @Repository
+@lombok.RequiredArgsConstructor
 public class EvaluationRepository {
 
 	public PhotoEvaluationEntity latestOwned(String accountId, String mediaId) {
@@ -54,13 +55,6 @@ public class EvaluationRepository {
 	private final ShootingSessionMapper sessions;
 
 	private final RetakeLinkMapper links;
-
-	public EvaluationRepository(PhotoEvaluationMapper evaluations, ShootingSessionMapper sessions,
-			RetakeLinkMapper links) {
-		this.evaluations = evaluations;
-		this.sessions = sessions;
-		this.links = links;
-	}
 
 	public PhotoEvaluationEntity findCached(String accountId, String contentHash, String sessionId) {
 		var query = new LambdaQueryWrapper<PhotoEvaluationEntity>().eq(PhotoEvaluationEntity::getAccountId, accountId)

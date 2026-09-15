@@ -12,6 +12,7 @@ import com.frameforward.course.model.entity.LessonProgressEntity;
 import com.frameforward.course.repository.CourseRepository;
 
 @Component
+@lombok.RequiredArgsConstructor
 public class CourseManager {
 
 	private static final String MODEL_ID = "qwen3.7-plus";
@@ -21,10 +22,6 @@ public class CourseManager {
 	private static final String SOURCE_MATERIAL_VERSION = "p0-2026-01";
 
 	private final CourseRepository repository;
-
-	public CourseManager(CourseRepository repository) {
-		this.repository = repository;
-	}
 
 	public CourseContentVersionEntity findOrCreateVersion(Course course) {
 		return findOrCreateVersion(course, course.contentVersion());

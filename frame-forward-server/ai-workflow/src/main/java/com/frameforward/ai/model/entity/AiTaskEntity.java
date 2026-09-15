@@ -5,7 +5,18 @@ import java.time.Instant;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 @TableName("ai_tasks")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AiTaskEntity {
 
 	@TableId
@@ -15,28 +26,5 @@ public class AiTaskEntity {
 			schemaVersion, inputJson, resultJson, errorCode;
 
 	public Instant createdAt, updatedAt;
-
-	public AiTaskEntity() {
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public String getAccountId() {
-		return accountId;
-	}
-
-	public String getOperationType() {
-		return operationType;
-	}
-
-	public String getIdempotencyKey() {
-		return idempotencyKey;
-	}
-
-	public String getState() {
-		return state;
-	}
 
 }

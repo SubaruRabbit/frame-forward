@@ -12,6 +12,7 @@ import com.frameforward.portfolio.model.entity.PortfolioWorkDeletionJobEntity;
 import com.frameforward.portfolio.repository.PortfolioRepository;
 
 @Component
+@lombok.RequiredArgsConstructor
 public class PortfolioManager {
 
 	private final PortfolioRepository repository;
@@ -19,13 +20,6 @@ public class PortfolioManager {
 	private final WorkEvaluationCleanup evaluationCleanup;
 
 	private final WorkMediaCleanup mediaCleanup;
-
-	public PortfolioManager(PortfolioRepository repository, WorkEvaluationCleanup evaluationCleanup,
-			WorkMediaCleanup mediaCleanup) {
-		this.repository = repository;
-		this.evaluationCleanup = evaluationCleanup;
-		this.mediaCleanup = mediaCleanup;
-	}
 
 	public boolean favorite(String accountId, String mediaId) {
 		return repository.countFavorites(accountId, mediaId) > 0;

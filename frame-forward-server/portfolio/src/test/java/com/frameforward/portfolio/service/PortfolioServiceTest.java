@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 
 import com.frameforward.auth.service.AuthService;
 import com.frameforward.evaluation.gateway.WorkEvaluationCleanup;
@@ -20,6 +21,7 @@ import com.frameforward.media.gateway.WorkMediaCleanup;
 import com.frameforward.media.model.dto.PortfolioMediaItem;
 import com.frameforward.media.service.PortfolioMediaQuery;
 import com.frameforward.portfolio.business.PortfolioBusiness;
+import com.frameforward.portfolio.converter.PortfolioConverter;
 import com.frameforward.portfolio.manager.PortfolioManager;
 import com.frameforward.portfolio.mapper.PortfolioFavoriteMapper;
 import com.frameforward.portfolio.mapper.PortfolioWorkDeletionJobMapper;
@@ -43,7 +45,7 @@ class PortfolioServiceTest {
 			mock(WorkEvaluationCleanup.class), mock(WorkMediaCleanup.class));
 
 	private final PortfolioService service = new PortfolioService(auth, media, evaluations,
-			new PortfolioBusiness(manager));
+			new PortfolioBusiness(manager, Mappers.getMapper(PortfolioConverter.class)));
 
 	@Test
 	void listsOnlyMatchingNonFavoriteWorks() {

@@ -7,26 +7,28 @@ import java.util.UUID;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 
+import com.frameforward.equipment.converter.EquipmentConverter;
 import com.frameforward.equipment.manager.EquipmentManager;
 import com.frameforward.equipment.model.EquipmentKind;
 import com.frameforward.equipment.model.dto.BodyLensCombination;
 import com.frameforward.equipment.model.dto.UserEquipmentItem;
 import com.frameforward.equipment.model.entity.UserEquipmentEntity;
 
+import lombok.RequiredArgsConstructor;
+
 /** 用户器材的归属、主力机和兼容性规则。 */
 @Component
+@RequiredArgsConstructor
 public class UserEquipmentBusiness {
 
 	private final EquipmentManager manager;
 
-	public UserEquipmentBusiness(EquipmentManager manager) {
-		this.manager = manager;
-	}
+	private final EquipmentConverter converter;
 
 	public List<UserEquipmentItem> list(String accountId) {
 		return manager.owned(accountId).stream().sorted(
 				Comparator.comparing((UserEquipmentEntity item) -> item.kind).thenComparing(item -> item.catalogItemId))
-				.map(UserEquipmentItem::from).toList();
+				.map(converter::toUserEquipmentItem).toList();
 	}
 
 	public UserEquipmentItem add(String accountId, String kind, String catalogItemId, String nickname) {
@@ -43,7 +45,7 @@ public class UserEquipmentBusiness {
 		} catch (DuplicateKeyException exception) {
 			throw new DuplicateEquipmentException();
 		}
-		return UserEquipmentItem.from(item);
+		return converter.toUserEquipmentItem(item);
 	}
 
 	public void remove(String accountId, String id) {
@@ -65,7 +67,7 @@ public class UserEquipmentBusiness {
 		}
 		manager.setPrimary(accountId, id);
 		item.isPrimary = true;
-		return UserEquipmentItem.from(item);
+		return converter.toUserEquipmentItem(item);
 	}
 
 	public List<BodyLensCombination> combinations(String accountId) {

@@ -10,7 +10,10 @@ import com.frameforward.auth.model.entity.AccountDeletionJobEntity;
 import com.frameforward.auth.model.entity.AccountEntity;
 import com.frameforward.auth.model.entity.RefreshSessionEntity;
 
+import lombok.RequiredArgsConstructor;
+
 @Repository
+@RequiredArgsConstructor
 public class AuthRepository {
 
 	private final AccountMapper accounts;
@@ -18,12 +21,6 @@ public class AuthRepository {
 	private final RefreshSessionMapper sessions;
 
 	private final AccountDeletionJobMapper jobs;
-
-	public AuthRepository(AccountMapper accounts, RefreshSessionMapper sessions, AccountDeletionJobMapper jobs) {
-		this.accounts = accounts;
-		this.sessions = sessions;
-		this.jobs = jobs;
-	}
 
 	public void insertAccount(AccountEntity account) {
 		accounts.insert(account);

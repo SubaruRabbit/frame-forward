@@ -10,14 +10,13 @@ import com.frameforward.ai.model.dto.AiTaskCompletionContext;
 import com.frameforward.shooting.manager.ShootingManager;
 import com.frameforward.shooting.model.entity.SceneAnalysisEntity;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class SceneAnalysisCompletionProcessor extends AiTaskCompletionProcessor {
 
 	private final ShootingManager manager;
-
-	public SceneAnalysisCompletionProcessor(ShootingManager manager) {
-		this.manager = manager;
-	}
 
 	@Override
 	public boolean supports(String operationType) {

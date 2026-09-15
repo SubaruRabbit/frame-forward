@@ -18,7 +18,10 @@ import com.frameforward.shooting.business.SceneAnalysisMediaNotOwned;
 import com.frameforward.shooting.business.ShootingBusiness;
 import com.frameforward.shooting.model.dto.SceneAnalysisRequest;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class SceneAnalysisService {
 
 	private final AuthService auth;
@@ -30,15 +33,6 @@ public class SceneAnalysisService {
 	private final AiTaskRuntime tasks;
 
 	private final ShootingBusiness business;
-
-	public SceneAnalysisService(AuthService auth, MediaManager media, UserEquipmentService equipment,
-			AiTaskRuntime tasks, ShootingBusiness business) {
-		this.auth = auth;
-		this.media = media;
-		this.equipment = equipment;
-		this.tasks = tasks;
-		this.business = business;
-	}
 
 	@Transactional
 	public AiTaskCreated create(String accessToken, String key, SceneAnalysisRequest request) {
@@ -55,9 +49,8 @@ public class SceneAnalysisService {
 		if (ownedEquipment.size() != request.equipmentIds.size()) {
 			throw new SceneAnalysisEquipmentNotOwned();
 		}
-		AiTaskCreateRequest aiRequest = new AiTaskCreateRequest();
-		aiRequest.operationType = "scene-analysis";
-		aiRequest.input = business.sceneInput(ownedMedia, ownedEquipment, request);
+		AiTaskCreateRequest aiRequest = AiTaskCreateRequest.builder().operationType("scene-analysis")
+				.input(business.sceneInput(ownedMedia, ownedEquipment, request)).build();
 		AiTaskCreated task = tasks.create(accessToken, key, aiRequest);
 		business.persistSceneIfAbsent(accountId, ownedMedia, ownedEquipment, request, task.taskId());
 		return task;

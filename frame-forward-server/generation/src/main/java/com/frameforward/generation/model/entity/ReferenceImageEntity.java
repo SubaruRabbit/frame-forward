@@ -5,7 +5,18 @@ import java.time.Instant;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 @TableName("reference_images")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReferenceImageEntity {
 
 	@TableId
@@ -15,9 +26,5 @@ public class ReferenceImageEntity {
 			generatedMediaId;
 
 	public Instant createdAt;
-
-	public String getAiTaskId() {
-		return aiTaskId;
-	}
 
 }

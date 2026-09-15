@@ -5,13 +5,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import com.frameforward.auth.gateway.AccountDataCleanup;
 
 /** 清除没有账户外键的历史用户数据，避免迁移旧表时遗漏。 */
+@lombok.RequiredArgsConstructor
 public class AccountDatabaseCleanup implements AccountDataCleanup {
 
 	private final JdbcTemplate jdbc;
-
-	public AccountDatabaseCleanup(JdbcTemplate jdbc) {
-		this.jdbc = jdbc;
-	}
 
 	@Override
 	public void deleteForAccount(String accountId) {

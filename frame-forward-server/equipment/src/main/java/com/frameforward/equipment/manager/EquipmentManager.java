@@ -10,14 +10,13 @@ import com.frameforward.equipment.model.entity.LensEntity;
 import com.frameforward.equipment.model.entity.UserEquipmentEntity;
 import com.frameforward.equipment.repository.EquipmentRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Component
+@RequiredArgsConstructor
 public class EquipmentManager {
 
 	private final EquipmentRepository repository;
-
-	public EquipmentManager(EquipmentRepository repository) {
-		this.repository = repository;
-	}
 
 	public List<CameraEntity> cameras() {
 		return repository.cameras();

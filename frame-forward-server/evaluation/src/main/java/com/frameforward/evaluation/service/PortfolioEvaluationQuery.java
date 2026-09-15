@@ -17,16 +17,12 @@ import com.frameforward.evaluation.model.entity.ShootingSessionEntity;
 
 /** 为作品集提供评测、拍摄方案关联和重拍关系的只读投影。 */
 @Component
+@lombok.RequiredArgsConstructor
 public class PortfolioEvaluationQuery {
 
 	private final EvaluationManager manager;
 
 	private final ObjectMapper json;
-
-	public PortfolioEvaluationQuery(EvaluationManager manager, ObjectMapper json) {
-		this.manager = manager;
-		this.json = json;
-	}
 
 	public PortfolioEvaluationDetail findOwned(String accountId, String mediaId) {
 		PhotoEvaluationEntity evaluation = manager.latestOwned(accountId, mediaId);

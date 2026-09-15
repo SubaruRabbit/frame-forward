@@ -8,15 +8,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.frameforward.ai.mapper.AiTaskMapper;
 import com.frameforward.ai.model.entity.AiTaskEntity;
 
+import lombok.RequiredArgsConstructor;
+
 /** 封装 AI 任务的数据库访问，查询条件与持久化状态值保持一致。 */
 @Repository
+@RequiredArgsConstructor
 public class AiTaskRepository {
 
 	private final AiTaskMapper tasks;
-
-	public AiTaskRepository(AiTaskMapper tasks) {
-		this.tasks = tasks;
-	}
 
 	public List<AiTaskEntity> findRunning() {
 		return tasks.selectList(new LambdaQueryWrapper<AiTaskEntity>().eq(AiTaskEntity::getState, "RUNNING"));

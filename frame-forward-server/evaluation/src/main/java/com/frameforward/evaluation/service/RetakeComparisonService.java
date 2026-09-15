@@ -20,6 +20,7 @@ import com.frameforward.media.manager.MediaManager;
 import com.frameforward.media.model.entity.MediaEntity;
 
 @Service
+@lombok.RequiredArgsConstructor
 public class RetakeComparisonService {
 
 	private final AuthService auth;
@@ -31,15 +32,6 @@ public class RetakeComparisonService {
 	private final RetakeComparisonGraph graph;
 
 	private final ObjectMapper json;
-
-	public RetakeComparisonService(AuthService auth, EvaluationManager manager, MediaManager media,
-			RetakeComparisonGraph graph, ObjectMapper json) {
-		this.auth = auth;
-		this.manager = manager;
-		this.media = media;
-		this.graph = graph;
-		this.json = json;
-	}
 
 	@Transactional
 	public Map<String, Object> create(String token, RetakeComparisonRequest request) {

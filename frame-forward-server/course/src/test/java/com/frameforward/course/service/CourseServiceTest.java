@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 
 import com.frameforward.ai.model.dto.AiTaskCreateRequest;
@@ -15,6 +16,7 @@ import com.frameforward.ai.service.AiTaskRuntime;
 import com.frameforward.auth.service.AuthService;
 import com.frameforward.course.business.CourseBusiness;
 import com.frameforward.course.component.CourseCatalog;
+import com.frameforward.course.converter.CourseConverter;
 import com.frameforward.course.model.dto.LessonContext;
 import com.frameforward.course.model.dto.ProgressSnapshot;
 import com.frameforward.course.model.entity.CourseContentVersionEntity;
@@ -30,7 +32,8 @@ class CourseServiceTest {
 
 	private final CourseBusiness business = mock(CourseBusiness.class);
 
-	private final CourseService service = new CourseService(auth, media, ai, business);
+	private final CourseService service = new CourseService(auth, media, ai, business,
+			Mappers.getMapper(CourseConverter.class));
 
 	@Test
 	void authenticatesCatalogCourseAndProgress() {

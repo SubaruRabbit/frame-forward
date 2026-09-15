@@ -14,18 +14,16 @@ import com.frameforward.equipment.model.dto.Compatibility;
 import com.frameforward.equipment.model.dto.Lens;
 import com.frameforward.equipment.service.CatalogService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/catalog")
+@RequiredArgsConstructor
 public class CatalogController {
 
 	private final AuthService auth;
 
 	private final CatalogService catalog;
-
-	public CatalogController(AuthService auth, CatalogService catalog) {
-		this.auth = auth;
-		this.catalog = catalog;
-	}
 
 	@GetMapping("/cameras")
 	public CatalogResponse<Camera> cameras(

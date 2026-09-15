@@ -9,13 +9,10 @@ import com.frameforward.evaluation.model.entity.*;
 import com.frameforward.evaluation.repository.EvaluationRepository;
 
 @Component
+@lombok.RequiredArgsConstructor
 public class EvaluationManager {
 
 	private final EvaluationRepository repository;
-
-	public EvaluationManager(EvaluationRepository repository) {
-		this.repository = repository;
-	}
 
 	public PhotoEvaluationEntity findCached(String accountId, String contentHash, String sessionId, boolean reanalyze) {
 		return reanalyze ? null : repository.findCached(accountId, contentHash, sessionId);

@@ -7,17 +7,16 @@ import org.springframework.stereotype.Component;
 import com.frameforward.auth.manager.AuthManager;
 import com.frameforward.auth.model.entity.AccountDeletionJobEntity;
 
+import lombok.RequiredArgsConstructor;
+
 /** 账号删除的跨资源业务规则与状态转换。 */
 @Component
+@RequiredArgsConstructor
 public class AuthBusiness {
 
 	private final AuthManager manager;
 
 	private final Clock clock = Clock.systemUTC();
-
-	public AuthBusiness(AuthManager manager) {
-		this.manager = manager;
-	}
 
 	public void processDeletion(AccountDeletionJobEntity job) {
 		job.state = "IN_PROGRESS";

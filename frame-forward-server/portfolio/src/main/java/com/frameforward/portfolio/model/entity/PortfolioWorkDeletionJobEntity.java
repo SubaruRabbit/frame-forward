@@ -5,7 +5,18 @@ import java.time.Instant;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 @TableName("portfolio_work_deletion_jobs")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PortfolioWorkDeletionJobEntity {
 
 	@TableId
@@ -22,21 +33,5 @@ public class PortfolioWorkDeletionJobEntity {
 	public Instant createdAt;
 
 	public Instant updatedAt;
-
-	public String getId() {
-		return id;
-	}
-
-	public String getAccountId() {
-		return accountId;
-	}
-
-	public String getMediaId() {
-		return mediaId;
-	}
-
-	public String getState() {
-		return state;
-	}
 
 }

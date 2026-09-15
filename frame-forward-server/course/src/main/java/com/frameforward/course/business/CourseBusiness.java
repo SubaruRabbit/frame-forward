@@ -13,13 +13,10 @@ import com.frameforward.course.model.dto.ProgressSnapshot;
 import com.frameforward.course.model.entity.CourseContentVersionEntity;
 
 @Component
+@lombok.RequiredArgsConstructor
 public class CourseBusiness {
 
 	private final CourseManager manager;
-
-	public CourseBusiness(CourseManager manager) {
-		this.manager = manager;
-	}
 
 	public List<Course> catalog() {
 		return CourseCatalog.p0();

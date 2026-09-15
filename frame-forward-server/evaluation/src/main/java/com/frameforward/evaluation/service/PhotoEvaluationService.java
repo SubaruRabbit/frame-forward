@@ -20,6 +20,7 @@ import com.frameforward.media.manager.MediaManager;
 import com.frameforward.media.model.entity.MediaEntity;
 
 @Service
+@lombok.RequiredArgsConstructor
 public class PhotoEvaluationService {
 
 	private final AuthService auth;
@@ -31,15 +32,6 @@ public class PhotoEvaluationService {
 	private final ObjectMapper json;
 
 	private final EvaluationBusiness business;
-
-	public PhotoEvaluationService(AuthService auth, MediaManager media, AiTaskRuntime tasks, ObjectMapper json,
-			EvaluationBusiness business) {
-		this.auth = auth;
-		this.media = media;
-		this.tasks = tasks;
-		this.json = json;
-		this.business = business;
-	}
 
 	@Transactional
 	public AiTaskCreated create(String token, String key, PhotoEvaluationRequest request) {
@@ -78,9 +70,7 @@ public class PhotoEvaluationService {
 		if (request.mockOutput != null) {
 			input.put("mockOutput", request.mockOutput);
 		}
-		var ai = new AiTaskCreateRequest();
-		ai.operationType = "photo-evaluation";
-		ai.input = input;
+		var ai = AiTaskCreateRequest.builder().operationType("photo-evaluation").input(input).build();
 		return tasks.create(token, key, ai);
 	}
 

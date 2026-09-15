@@ -20,15 +20,14 @@ import com.frameforward.auth.model.dto.RegisterRequest;
 import com.frameforward.auth.model.dto.SessionTokens;
 import com.frameforward.auth.service.AuthService;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
 	private final AuthService auth;
-
-	public AuthController(AuthService auth) {
-		this.auth = auth;
-	}
 
 	@PostMapping("/register")
 	ResponseEntity<SessionTokens> register(@RequestBody RegisterRequest request) {

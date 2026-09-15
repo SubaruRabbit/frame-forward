@@ -21,6 +21,7 @@ import com.frameforward.portfolio.model.dto.Filter;
 import com.frameforward.portfolio.model.dto.Page;
 
 @Service
+@lombok.RequiredArgsConstructor
 public class PortfolioService {
 
 	private final AuthService auth;
@@ -30,14 +31,6 @@ public class PortfolioService {
 	private final PortfolioEvaluationQuery evaluations;
 
 	private final PortfolioBusiness business;
-
-	public PortfolioService(AuthService auth, PortfolioMediaQuery media, PortfolioEvaluationQuery evaluations,
-			PortfolioBusiness business) {
-		this.auth = auth;
-		this.media = media;
-		this.evaluations = evaluations;
-		this.business = business;
-	}
 
 	public Page list(String token, Filter filter) {
 		String accountId = auth.requireAccountId(token);
