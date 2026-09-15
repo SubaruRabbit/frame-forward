@@ -19,11 +19,14 @@ import lombok.Setter;
 @AllArgsConstructor
 public class PortfolioFavoriteEntity {
 
+	/** 收藏的媒体唯一标识。 */
 	@TableId
 	public String mediaId;
 
+	/** 所属账户唯一标识。 */
 	public String accountId;
 
+	/** 收藏创建时间。 */
 	public Instant createdAt;
 
 }

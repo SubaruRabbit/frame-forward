@@ -19,11 +19,20 @@ import lombok.Setter;
 @AllArgsConstructor
 public class RetakeLinkEntity {
 
+	/** 重拍照片评估唯一标识。 */
 	@TableId
 	public String retakeEvaluationId;
 
-	public String originalEvaluationId, accountId, sessionId;
+	/** 原始照片评估唯一标识。 */
+	public String originalEvaluationId;
 
+	/** 所属账户唯一标识。 */
+	public String accountId;
+
+	/** 所属拍摄会话唯一标识。 */
+	public String sessionId;
+
+	/** 重拍关联创建时间。 */
 	public Instant createdAt;
 
 }

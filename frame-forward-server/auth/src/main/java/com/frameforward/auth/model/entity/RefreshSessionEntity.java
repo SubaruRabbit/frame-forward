@@ -19,11 +19,14 @@ import lombok.Setter;
 @AllArgsConstructor
 public class RefreshSessionEntity {
 
+	/** 刷新令牌哈希值。 */
 	@TableId
 	public String tokenHash;
 
+	/** 所属账户唯一标识。 */
 	public String accountId;
 
+	/** 会话过期时间。 */
 	public Instant expiresAt;
 
 }

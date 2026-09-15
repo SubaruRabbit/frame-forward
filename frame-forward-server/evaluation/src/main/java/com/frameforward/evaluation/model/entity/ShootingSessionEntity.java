@@ -19,11 +19,20 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ShootingSessionEntity {
 
+	/** 拍摄会话唯一标识。 */
 	@TableId
 	public String id;
 
-	public String accountId, shootingPlanId, planContext;
+	/** 所属账户唯一标识。 */
+	public String accountId;
 
+	/** 使用的拍摄方案唯一标识。 */
+	public String shootingPlanId;
+
+	/** 拍摄方案上下文摘要。 */
+	public String planContext;
+
+	/** 拍摄会话创建时间。 */
 	public Instant createdAt;
 
 }

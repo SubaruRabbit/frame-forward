@@ -1,0 +1,21 @@
+ALTER TABLE accounts COMMENT = '账户信息表',
+  MODIFY COLUMN id CHAR(36) NOT NULL COMMENT '账户唯一标识',
+  MODIFY COLUMN username VARCHAR(32) NOT NULL COMMENT '登录用户名',
+  MODIFY COLUMN email VARCHAR(254) NOT NULL COMMENT '登录邮箱地址',
+  MODIFY COLUMN password_hash VARCHAR(100) NOT NULL COMMENT '密码哈希值',
+  MODIFY COLUMN created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '账户创建时间';
+
+ALTER TABLE refresh_sessions COMMENT = '刷新令牌会话表',
+  MODIFY COLUMN token_hash CHAR(44) NOT NULL COMMENT '刷新令牌哈希值',
+  MODIFY COLUMN account_id CHAR(36) NOT NULL COMMENT '所属账户唯一标识',
+  MODIFY COLUMN expires_at TIMESTAMP(6) NOT NULL COMMENT '会话过期时间';
+
+ALTER TABLE account_deletion_jobs COMMENT = '账户删除任务表',
+  MODIFY COLUMN id CHAR(36) NOT NULL COMMENT '删除任务唯一标识',
+  MODIFY COLUMN account_id CHAR(36) NOT NULL COMMENT '待删除账户唯一标识',
+  MODIFY COLUMN deletion_token_hash CHAR(44) NOT NULL COMMENT '删除确认令牌哈希值',
+  MODIFY COLUMN state VARCHAR(20) NOT NULL COMMENT '删除任务状态',
+  MODIFY COLUMN failure_reason VARCHAR(500) NULL COMMENT '删除失败原因',
+  MODIFY COLUMN deletion_token_expires_at TIMESTAMP(6) NOT NULL COMMENT '删除确认令牌过期时间',
+  MODIFY COLUMN created_at TIMESTAMP(6) NOT NULL COMMENT '删除任务创建时间',
+  MODIFY COLUMN updated_at TIMESTAMP(6) NOT NULL COMMENT '删除任务更新时间';

@@ -18,8 +18,16 @@ import lombok.Setter;
 @AllArgsConstructor
 public class LessonProgressEntity {
 
-	public String accountId, contentVersionId, lessonId;
+	/** 所属账户唯一标识。 */
+	public String accountId;
 
+	/** 课程内容版本唯一标识。 */
+	public String contentVersionId;
+
+	/** 课时唯一标识。 */
+	public String lessonId;
+
+	/** 课时完成时间。 */
 	public Instant completedAt;
 
 }

@@ -17,9 +17,11 @@ import lombok.Setter;
 @AllArgsConstructor
 public class AccessoryTypeEntity {
 
+	/** 配件类型唯一标识。 */
 	@TableId
 	public String id;
 
+	/** 配件类型显示名称。 */
 	public String displayName;
 
 }

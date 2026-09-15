@@ -1,0 +1,31 @@
+ALTER TABLE catalog_cameras COMMENT = '相机型号目录表',
+  MODIFY COLUMN id VARCHAR(64) NOT NULL COMMENT '相机目录唯一标识',
+  MODIFY COLUMN brand VARCHAR(32) NOT NULL COMMENT '相机品牌',
+  MODIFY COLUMN model VARCHAR(64) NOT NULL COMMENT '相机型号',
+  MODIFY COLUMN mount VARCHAR(16) NOT NULL COMMENT '相机卡口类型',
+  MODIFY COLUMN sensor_format VARCHAR(16) NOT NULL COMMENT '相机传感器画幅';
+
+ALTER TABLE catalog_lenses COMMENT = '镜头型号目录表',
+  MODIFY COLUMN id VARCHAR(64) NOT NULL COMMENT '镜头目录唯一标识',
+  MODIFY COLUMN brand VARCHAR(32) NOT NULL COMMENT '镜头品牌',
+  MODIFY COLUMN model VARCHAR(128) NOT NULL COMMENT '镜头型号',
+  MODIFY COLUMN mount VARCHAR(16) NOT NULL COMMENT '镜头卡口类型',
+  MODIFY COLUMN focal_length_min_mm SMALLINT NOT NULL COMMENT '最小焦距（毫米）',
+  MODIFY COLUMN focal_length_max_mm SMALLINT NOT NULL COMMENT '最大焦距（毫米）',
+  MODIFY COLUMN maximum_aperture DECIMAL(3,1) NOT NULL COMMENT '最大光圈值',
+  MODIFY COLUMN sensor_format VARCHAR(16) NOT NULL COMMENT '镜头适配的传感器画幅';
+
+ALTER TABLE catalog_accessory_types COMMENT = '摄影配件类型目录表',
+  MODIFY COLUMN id VARCHAR(64) NOT NULL COMMENT '配件类型唯一标识',
+  MODIFY COLUMN display_name VARCHAR(64) NOT NULL COMMENT '配件类型显示名称';
+
+ALTER TABLE user_equipment COMMENT = '用户器材表',
+  MODIFY COLUMN id CHAR(36) NOT NULL COMMENT '用户器材唯一标识',
+  MODIFY COLUMN account_id CHAR(36) NOT NULL COMMENT '所属账户唯一标识',
+  MODIFY COLUMN kind VARCHAR(16) NOT NULL COMMENT '器材种类',
+  MODIFY COLUMN catalog_item_id VARCHAR(64) NOT NULL COMMENT '关联的器材目录标识',
+  MODIFY COLUMN nickname VARCHAR(64) NULL COMMENT '用户自定义器材昵称',
+  MODIFY COLUMN is_primary BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否为主相机',
+  MODIFY COLUMN primary_camera_account_id CHAR(36) GENERATED ALWAYS AS (
+    CASE WHEN kind = 'CAMERA' AND is_primary THEN account_id ELSE NULL END
+  ) STORED COMMENT '主相机唯一性约束使用的账户标识';

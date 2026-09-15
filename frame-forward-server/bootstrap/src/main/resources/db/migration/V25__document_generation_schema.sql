@@ -1,0 +1,10 @@
+ALTER TABLE reference_images COMMENT = 'AI 参考图生成记录表',
+  MODIFY COLUMN id VARCHAR(36) NOT NULL COMMENT '参考图记录唯一标识',
+  MODIFY COLUMN account_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '所属账户唯一标识',
+  MODIFY COLUMN environment_media_id VARCHAR(36) NOT NULL COMMENT '输入环境照片媒体唯一标识',
+  MODIFY COLUMN shooting_plan_id VARCHAR(36) NOT NULL COMMENT '关联拍摄方案唯一标识',
+  MODIFY COLUMN ai_task_id VARCHAR(36) NOT NULL COMMENT '参考图生成 AI 任务唯一标识',
+  MODIFY COLUMN selected_plan_label VARCHAR(32) NOT NULL COMMENT '用户选择的方案标签',
+  MODIFY COLUMN prompt_text TEXT NOT NULL COMMENT '参考图生成提示词',
+  MODIFY COLUMN generated_media_id VARCHAR(36) NULL COMMENT '生成结果媒体唯一标识',
+  MODIFY COLUMN created_at TIMESTAMP(6) NOT NULL COMMENT '参考图记录创建时间';

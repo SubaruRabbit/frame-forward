@@ -1,0 +1,20 @@
+ALTER TABLE scene_analyses COMMENT = '拍摄场景分析表',
+  MODIFY COLUMN id VARCHAR(36) NOT NULL COMMENT '场景分析唯一标识',
+  MODIFY COLUMN account_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '所属账户唯一标识',
+  MODIFY COLUMN environment_media_id VARCHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '环境照片媒体唯一标识',
+  MODIFY COLUMN subject_type VARCHAR(64) NOT NULL COMMENT '拍摄主体类型',
+  MODIFY COLUMN subject_text VARCHAR(255) NOT NULL COMMENT '拍摄主体描述',
+  MODIFY COLUMN target_style VARCHAR(255) NOT NULL COMMENT '目标拍摄风格',
+  MODIFY COLUMN time_constraint_minutes INT NOT NULL COMMENT '拍摄时间限制（分钟）',
+  MODIFY COLUMN equipment_snapshot_json JSON NOT NULL COMMENT '分析时的器材快照',
+  MODIFY COLUMN ai_task_id VARCHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '场景分析 AI 任务唯一标识',
+  MODIFY COLUMN created_at TIMESTAMP(6) NOT NULL COMMENT '场景分析创建时间';
+
+ALTER TABLE shooting_plans COMMENT = '拍摄方案表',
+  MODIFY COLUMN id VARCHAR(36) NOT NULL COMMENT '拍摄方案唯一标识',
+  MODIFY COLUMN account_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '所属账户唯一标识',
+  MODIFY COLUMN scene_analysis_id VARCHAR(36) NOT NULL COMMENT '场景分析唯一标识',
+  MODIFY COLUMN ai_task_id VARCHAR(36) NOT NULL COMMENT '方案生成 AI 任务唯一标识',
+  MODIFY COLUMN scene_snapshot_json JSON NOT NULL COMMENT '生成方案使用的场景快照',
+  MODIFY COLUMN equipment_snapshot_json JSON NOT NULL COMMENT '生成方案使用的器材快照',
+  MODIFY COLUMN created_at TIMESTAMP(6) NOT NULL COMMENT '拍摄方案创建时间';
