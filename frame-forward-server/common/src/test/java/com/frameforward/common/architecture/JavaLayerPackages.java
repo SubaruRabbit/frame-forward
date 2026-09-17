@@ -83,7 +83,8 @@ public final class JavaLayerPackages {
 			return;
 		}
 		String actual = unit.getPackageName().toString();
-		String directory = relative.getParent() == null ? "" : relative.getParent().toString().replace('/', '.');
+		String directory = relative.getParent() == null ? ""
+				: relative.getParent().toString().replace('\\', '.').replace('/', '.');
 
 		if (!actual.equals(directory)) {
 			result.add(new Violation(relative, Kind.DIRECTORY_PACKAGE_MISMATCH, actual, directory));

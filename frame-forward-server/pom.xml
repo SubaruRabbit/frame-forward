@@ -216,7 +216,7 @@
                             <indentSchemaLocation>false</indentSchemaLocation>
                             <indentAttribute>all</indentAttribute>
                             <predefinedSortOrder>recommended_2008_06</predefinedSortOrder>
-                            <sortOrderFile>https://raw.githubusercontent.com/Ekryd/sortpom/master/sorter/src/main/resources/custom_1.xml</sortOrderFile>
+                            <sortOrderFile>${maven.multiModuleProjectDirectory}/config/sortpom-custom.xml</sortOrderFile>
                             <sortDependencies>none</sortDependencies>
                             <sortDependencyManagement></sortDependencyManagement>
                             <sortDependencyExclusions></sortDependencyExclusions>
