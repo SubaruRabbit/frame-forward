@@ -1438,13 +1438,13 @@
         ],
         "responses": {
           "200": {
-            "description": "Cached courses",
+            "description": "Cached course summaries",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Course"
+                    "$ref": "#/components/schemas/CourseSummary"
                   }
                 }
               }
@@ -1477,11 +1477,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Course and versioned lessons",
+            "description": "Course and versioned structured chapters",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Course"
+                  "$ref": "#/components/schemas/CourseDetail"
                 }
               }
             }
@@ -1611,14 +1611,14 @@
       }
     },
     "schemas": {
-      "Course": {
+      "CourseSummary": {
         "type": "object",
         "required": [
           "id",
           "title",
           "category",
           "contentVersion",
-          "lessons"
+          "lessonCount"
         ],
         "properties": {
           "id": {
@@ -1639,6 +1639,67 @@
           "contentVersion": {
             "type": "string"
           },
+          "lessonCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "CourseDetail": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "category",
+          "contentVersion",
+          "chapters"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "BASICS",
+              "MIRRORLESS",
+              "EQUIPMENT",
+              "MODEL"
+            ]
+          },
+          "contentVersion": {
+            "type": "string"
+          },
+          "chapters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Chapter"
+            }
+          }
+        }
+      },
+      "Chapter": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "sequence",
+          "lessons"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
           "lessons": {
             "type": "array",
             "items": {
@@ -1652,7 +1713,12 @@
         "required": [
           "id",
           "title",
-          "objective"
+          "objective",
+          "content",
+          "correctExample",
+          "incorrectExample",
+          "exercise",
+          "assignment"
         ],
         "properties": {
           "id": {
@@ -1662,6 +1728,40 @@
             "type": "string"
           },
           "objective": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "correctExample": {
+            "type": "string"
+          },
+          "incorrectExample": {
+            "type": "string"
+          },
+          "exercise": {
+            "$ref": "#/components/schemas/JudgmentExercise"
+          },
+          "assignment": {
+            "type": "string"
+          }
+        }
+      },
+      "JudgmentExercise": {
+        "type": "object",
+        "required": [
+          "question",
+          "answer",
+          "explanation"
+        ],
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "boolean"
+          },
+          "explanation": {
             "type": "string"
           }
         }

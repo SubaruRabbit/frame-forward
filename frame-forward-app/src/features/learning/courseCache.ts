@@ -1,13 +1,8 @@
 import { keyValueStorage, type KeyValueStorage } from '@services/storage';
+import type { CourseDetail, Lesson } from './course';
 
-export type Lesson = { id: string; title: string; objective: string };
-export type Course = {
-  id: string;
-  title: string;
-  category: 'BASICS' | 'MIRRORLESS' | 'EQUIPMENT' | 'MODEL';
-  contentVersion: string;
-  lessons: Lesson[];
-};
+export type { Chapter, JudgmentExercise, Lesson } from './course';
+export type Course = CourseDetail;
 type Storage = Pick<KeyValueStorage, 'getItem' | 'setItem'>;
 const KEY = 'learning:p0-courses';
 export async function saveP0Courses(courses: Course[], storage: Storage = keyValueStorage) {
@@ -22,7 +17,9 @@ export async function cachedP0Lesson(
   const course: Course | undefined = raw
     ? JSON.parse(raw).find((item: Course) => item.id === courseId)
     : undefined;
-  return course?.lessons.find(item => item.id === lessonId) ?? null;
+  return (
+    course?.chapters.flatMap(chapter => chapter.lessons).find(item => item.id === lessonId) ?? null
+  );
 }
 export async function cachedP0Courses(storage: Storage = keyValueStorage): Promise<Course[]> {
   const raw = await storage.getItem(KEY);

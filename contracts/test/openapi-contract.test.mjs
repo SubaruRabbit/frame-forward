@@ -31,6 +31,34 @@ test('course detail declares observed success and missing-resource responses', (
   assert.deepEqual(operation.security, [{ bearerAuth: [] }]);
 });
 
+test('course detail exposes structured chapters while the catalog remains a summary', () => {
+  const courseSummary = contract.components.schemas.CourseSummary;
+  const courseDetail = contract.components.schemas.CourseDetail;
+  const lesson = contract.components.schemas.Lesson;
+
+  assert.deepEqual(courseSummary.required, [
+    'id',
+    'title',
+    'category',
+    'contentVersion',
+    'lessonCount',
+  ]);
+  assert.deepEqual(courseSummary.properties.lessonCount, { type: 'integer', minimum: 0 });
+  assert.deepEqual(courseDetail.required, ['id', 'title', 'category', 'contentVersion', 'chapters']);
+  assert.deepEqual(lesson.required, [
+    'id',
+    'title',
+    'objective',
+    'content',
+    'correctExample',
+    'incorrectExample',
+    'exercise',
+    'assignment',
+  ]);
+  assert.deepEqual(courseDetail.properties.chapters.items.$ref, '#/components/schemas/Chapter');
+  assert.ok(contract.components.schemas.Chapter);
+});
+
 test('authenticated course operations declare unauthorized responses', () => {
   for (const operation of [
     contract.paths['/courses'].get,

@@ -2,6 +2,7 @@ package com.frameforward.course.model.entity;
 
 import java.time.Instant;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import lombok.AllArgsConstructor;
@@ -17,6 +18,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LessonProgressEntity {
+
+	/** 课程进度唯一标识。 */
+	@TableId
+	public String id;
 
 	/** 所属账户唯一标识。 */
 	public String accountId;

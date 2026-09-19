@@ -9,7 +9,29 @@ test('opens a cached P0 lesson without requesting generation', async () => {
         title: '摄影基础',
         category: 'BASICS',
         contentVersion: 'p0-2026-01',
-        lessons: [{ id: 'exposure', title: '曝光', objective: '控制曝光' }],
+        chapters: [
+          {
+            id: 'chapter',
+            title: '基础',
+            sequence: 1,
+            lessons: [
+              {
+                id: 'exposure',
+                title: '曝光',
+                objective: '控制曝光',
+                content: '曝光三要素',
+                correctExample: '主体清晰',
+                incorrectExample: '主体模糊',
+                exercise: {
+                  question: '提高 ISO 可以提高快门。',
+                  answer: true,
+                  explanation: '可换取更快快门。',
+                },
+                assignment: '拍摄一张照片',
+              },
+            ],
+          },
+        ],
       },
     ],
     {

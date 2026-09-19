@@ -455,7 +455,7 @@ paths:
       summary: List cached P0 courses without generating new content.
       security: [{bearerAuth: []}]
       responses:
-        '200': {description: Cached courses, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Course'}}}}}
+        '200': {description: Cached course summaries, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/CourseSummary'}}}}}
         '401': {description: Authentication required.}
   /courses/{courseId}:
     get:
@@ -463,7 +463,7 @@ paths:
       summary: Open a cached immutable course version.
       security: [{bearerAuth: []}]
       parameters: [{in: path, name: courseId, required: true, schema: {type: string}}]
-      responses: {'200': {description: Course and versioned lessons, content: {application/json: {schema: {$ref: '#/components/schemas/Course'}}}}, '404': {description: Course not found}}
+      responses: {'200': {description: Course and versioned structured chapters, content: {application/json: {schema: {$ref: '#/components/schemas/CourseDetail'}}}}, '404': {description: Course not found}}
   /courses/{courseId}/progress:
     get:
       operationId: getCourseProgress
@@ -492,19 +492,51 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   schemas:
-    Course:
+    CourseSummary:
       type: object
-      required: [id, title, category, contentVersion, lessons]
+      required: [id, title, category, contentVersion, lessonCount]
       properties:
         id: {type: string}
         title: {type: string}
         category: {type: string, enum: [BASICS, MIRRORLESS, EQUIPMENT, MODEL]}
         contentVersion: {type: string}
+        lessonCount: {type: integer, minimum: 0}
+    CourseDetail:
+      type: object
+      required: [id, title, category, contentVersion, chapters]
+      properties:
+        id: {type: string}
+        title: {type: string}
+        category: {type: string, enum: [BASICS, MIRRORLESS, EQUIPMENT, MODEL]}
+        contentVersion: {type: string}
+        chapters: {type: array, items: {$ref: '#/components/schemas/Chapter'}}
+    Chapter:
+      type: object
+      required: [id, title, sequence, lessons]
+      properties:
+        id: {type: string}
+        title: {type: string}
+        sequence: {type: integer, minimum: 1}
         lessons: {type: array, items: {$ref: '#/components/schemas/Lesson'}}
     Lesson:
       type: object
-      required: [id, title, objective]
-      properties: {id: {type: string}, title: {type: string}, objective: {type: string}}
+      required: [id, title, objective, content, correctExample, incorrectExample, exercise, assignment]
+      properties:
+        id: {type: string}
+        title: {type: string}
+        objective: {type: string}
+        content: {type: string}
+        correctExample: {type: string}
+        incorrectExample: {type: string}
+        exercise: {$ref: '#/components/schemas/JudgmentExercise'}
+        assignment: {type: string}
+    JudgmentExercise:
+      type: object
+      required: [question, answer, explanation]
+      properties:
+        question: {type: string}
+        answer: {type: boolean}
+        explanation: {type: string}
     CourseProgress:
       type: object
       required: [courseId, contentVersion, completedLessons, totalLessons]

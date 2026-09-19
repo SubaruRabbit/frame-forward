@@ -1,13 +1,20 @@
 package com.frameforward.course.manager;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.frameforward.course.model.dto.Course;
+import com.frameforward.course.business.CourseNotFound;
+import com.frameforward.course.converter.CourseContentConverter;
+import com.frameforward.course.model.dto.Chapter;
+import com.frameforward.course.model.dto.CourseDetail;
+import com.frameforward.course.model.dto.CourseSummary;
 import com.frameforward.course.model.entity.AssignmentFeedbackEntity;
+import com.frameforward.course.model.entity.CourseChapterEntity;
 import com.frameforward.course.model.entity.CourseContentVersionEntity;
+import com.frameforward.course.model.entity.CourseDefinitionEntity;
 import com.frameforward.course.model.entity.LessonProgressEntity;
 import com.frameforward.course.repository.CourseRepository;
 
@@ -23,11 +30,29 @@ public class CourseManager {
 
 	private final CourseRepository repository;
 
-	public CourseContentVersionEntity findOrCreateVersion(Course course) {
+	private final CourseContentConverter converter;
+
+	public List<CourseSummary> catalog() {
+		return repository.listDefinitions().stream().map(this::toSummary).toList();
+	}
+
+	public CourseDetail course(String courseId) {
+		CourseDefinitionEntity definition = repository.findDefinition(courseId);
+		CourseContentVersionEntity version = repository.findLatestVersion(courseId);
+
+		if (definition == null || version == null) {
+			throw new CourseNotFound();
+		}
+
+		return new CourseDetail(definition.id, definition.title, definition.category, version.contentVersion,
+				repository.listChapters(version.id).stream().map(this::toChapter).toList());
+	}
+
+	public CourseContentVersionEntity findOrCreateVersion(CourseDetail course) {
 		return findOrCreateVersion(course, course.contentVersion());
 	}
 
-	public CourseContentVersionEntity findOrCreateVersion(Course course, String contentVersion) {
+	public CourseContentVersionEntity findOrCreateVersion(CourseDetail course, String contentVersion) {
 		CourseContentVersionEntity existing = repository.findVersion(course.id(), contentVersion);
 
 		if (existing != null) {
@@ -45,6 +70,22 @@ public class CourseManager {
 		return created;
 	}
 
+	private CourseSummary toSummary(CourseDefinitionEntity definition) {
+		CourseContentVersionEntity version = repository.findLatestVersion(definition.id);
+
+		if (version == null) {
+			throw new IllegalStateException("课程缺少内容版本：" + definition.id);
+		}
+
+		return new CourseSummary(definition.id, definition.title, definition.category, version.contentVersion,
+				Math.toIntExact(repository.countLessons(version.id)));
+	}
+
+	private Chapter toChapter(CourseChapterEntity chapter) {
+		return new Chapter(chapter.id, chapter.title, chapter.sequenceNumber,
+				repository.listLessons(chapter.id).stream().map(converter::toLesson).toList());
+	}
+
 	public long countCompletedLessons(String accountId, String contentVersionId) {
 		return repository.countCompletedLessons(accountId, contentVersionId);
 	}
@@ -54,6 +95,7 @@ public class CourseManager {
 
 		if (existing == 0) {
 			LessonProgressEntity item = new LessonProgressEntity();
+			item.id = UUID.randomUUID().toString();
 			item.accountId = accountId;
 			item.contentVersionId = contentVersionId;
 			item.lessonId = lessonId;

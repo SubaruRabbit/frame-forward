@@ -1,6 +1,7 @@
 package com.frameforward.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.sql.DriverManager;
 
@@ -87,8 +88,8 @@ class CourseDeliveryMigrationTests {
 							+ "(id, course_id, content_version, model_id, prompt_version, source_material_version, created_at) "
 							+ "VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP(6))");
 					var progress = connection.prepareStatement(
-							"INSERT INTO lesson_progress(account_id, content_version_id, lesson_id, completed_at) "
-									+ "VALUES (?, ?, ?, CURRENT_TIMESTAMP(6))");
+							"INSERT INTO lesson_progress(id, account_id, content_version_id, lesson_id, completed_at) "
+									+ "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP(6))");
 					var feedback = connection.prepareStatement("INSERT INTO lesson_assignment_feedback "
 							+ "(id, account_id, content_version_id, lesson_id, media_id, feedback_task_id, lesson_objective, created_at) "
 							+ "VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP(6))");
@@ -108,9 +109,10 @@ class CourseDeliveryMigrationTests {
 				content.setString(5, "prompt");
 				content.setString(6, "source");
 				content.executeUpdate();
-				progress.setString(1, accountId);
-				progress.setString(2, "00000000-0000-0000-0000-000000000018");
-				progress.setString(3, "lesson");
+				progress.setString(1, "00000000-0000-0000-0000-000000000020");
+				progress.setString(2, accountId);
+				progress.setString(3, "00000000-0000-0000-0000-000000000018");
+				progress.setString(4, "lesson");
 				progress.executeUpdate();
 				feedback.setString(1, "00000000-0000-0000-0000-000000000019");
 				feedback.setString(2, accountId);
@@ -129,6 +131,101 @@ class CourseDeliveryMigrationTests {
 					result.next();
 					assertThat(result.getInt(1)).isZero();
 				}
+			}
+		}
+	}
+
+	@Test
+	void migrationUpgradesLegacyProgressWithoutLosingItsBusinessIdentity() throws Exception {
+
+		try (var legacy = new MySQLContainer<>("mysql:8.4.0")) {
+			legacy.start();
+			var url = legacy.getJdbcUrl();
+			Flyway.configure().dataSource(url, legacy.getUsername(), legacy.getPassword())
+					.locations("classpath:db/migration").target("27").load().migrate();
+
+			try (var connection = DriverManager.getConnection(url, legacy.getUsername(), legacy.getPassword());
+					var account = connection.prepareStatement(
+							"INSERT INTO accounts(id, username, email, password_hash) VALUES (?, ?, ?, ?)");
+					var version = connection.prepareStatement("INSERT INTO course_content_versions "
+							+ "(id, course_id, content_version, model_id, prompt_version, source_material_version, created_at) "
+							+ "VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP(6))");
+					var progress = connection.prepareStatement(
+							"INSERT INTO lesson_progress(account_id, content_version_id, lesson_id, completed_at) "
+									+ "VALUES (?, ?, ?, CURRENT_TIMESTAMP(6))")) {
+				account.setString(1, "00000000-0000-0000-0000-000000000021");
+				account.setString(2, "legacy-progress-user");
+				account.setString(3, "legacy-progress-user@example.com");
+				account.setString(4, "hash");
+				account.executeUpdate();
+				version.setString(1, "00000000-0000-0000-0000-000000000022");
+				version.setString(2, "legacy-progress-course");
+				version.setString(3, "v1");
+				version.setString(4, "model");
+				version.setString(5, "prompt");
+				version.setString(6, "source");
+				version.executeUpdate();
+				progress.setString(1, "00000000-0000-0000-0000-000000000021");
+				progress.setString(2, "00000000-0000-0000-0000-000000000022");
+				progress.setString(3, "legacy-lesson");
+				progress.executeUpdate();
+			}
+
+			Flyway.configure().dataSource(url, legacy.getUsername(), legacy.getPassword())
+					.locations("classpath:db/migration").load().migrate();
+
+			try (var connection = DriverManager.getConnection(url, legacy.getUsername(), legacy.getPassword());
+					var migrated = connection.prepareStatement("SELECT id FROM lesson_progress "
+							+ "WHERE account_id = ? AND content_version_id = ? AND lesson_id = ?")) {
+				migrated.setString(1, "00000000-0000-0000-0000-000000000021");
+				migrated.setString(2, "00000000-0000-0000-0000-000000000022");
+				migrated.setString(3, "legacy-lesson");
+
+				try (var result = migrated.executeQuery()) {
+					assertThat(result.next()).isTrue();
+					assertThat(result.getString("id")).hasSize(36);
+				}
+
+				try (var duplicate = connection.prepareStatement("INSERT INTO lesson_progress "
+						+ "(id, account_id, content_version_id, lesson_id, completed_at) "
+						+ "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP(6))")) {
+					duplicate.setString(1, "00000000-0000-0000-0000-000000000023");
+					duplicate.setString(2, "00000000-0000-0000-0000-000000000021");
+					duplicate.setString(3, "00000000-0000-0000-0000-000000000022");
+					duplicate.setString(4, "legacy-lesson");
+					assertThatThrownBy(duplicate::executeUpdate).isInstanceOf(Exception.class);
+				}
+			}
+		}
+	}
+
+	@Test
+	void migrationsCreateVersionedCourseStructureAndSeedEveryP0ModelTutorial() throws Exception {
+		var url = MYSQL.getJdbcUrl();
+		Flyway.configure().dataSource(url, MYSQL.getUsername(), MYSQL.getPassword()).locations("classpath:db/migration")
+				.load().migrate();
+
+		try (var connection = DriverManager.getConnection(url, MYSQL.getUsername(), MYSQL.getPassword());
+				var tables = connection.prepareStatement("SELECT COUNT(*) FROM information_schema.TABLES "
+						+ "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN "
+						+ "('course_definitions', 'course_chapters', 'course_lessons')");
+				var courses = connection.prepareStatement("SELECT COUNT(*) FROM course_definitions");
+				var models = connection
+						.prepareStatement("SELECT COUNT(*) FROM course_definitions " + "WHERE category = 'MODEL'")) {
+
+			try (var result = tables.executeQuery()) {
+				assertThat(result.next()).isTrue();
+				assertThat(result.getInt(1)).isEqualTo(3);
+			}
+
+			try (var result = courses.executeQuery()) {
+				assertThat(result.next()).isTrue();
+				assertThat(result.getInt(1)).isGreaterThanOrEqualTo(11);
+			}
+
+			try (var result = models.executeQuery()) {
+				assertThat(result.next()).isTrue();
+				assertThat(result.getInt(1)).isEqualTo(8);
 			}
 		}
 	}

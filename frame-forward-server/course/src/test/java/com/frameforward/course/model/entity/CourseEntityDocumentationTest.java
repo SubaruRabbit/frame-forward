@@ -18,7 +18,12 @@ class CourseEntityDocumentationTest {
 		Map<Class<?>, List<String>> entities = Map.of(CourseContentVersionEntity.class,
 				List.of("id", "courseId", "contentVersion", "modelId", "promptVersion", "sourceMaterialVersion",
 						"createdAt"),
-				LessonProgressEntity.class, List.of("accountId", "contentVersionId", "lessonId", "completedAt"),
+				CourseDefinitionEntity.class, List.of("id", "title", "category", "createdAt"),
+				CourseChapterEntity.class, List.of("id", "contentVersionId", "title", "sequenceNumber"),
+				CourseLessonEntity.class,
+				List.of("id", "chapterId", "title", "sequenceNumber", "objective", "content", "correctExample",
+						"incorrectExample", "exerciseJson", "assignmentText"),
+				LessonProgressEntity.class, List.of("id", "accountId", "contentVersionId", "lessonId", "completedAt"),
 				AssignmentFeedbackEntity.class, List.of("id", "accountId", "contentVersionId", "lessonId", "mediaId",
 						"feedbackTaskId", "lessonObjective", "createdAt"));
 

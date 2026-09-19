@@ -13,7 +13,8 @@ import com.frameforward.auth.service.AuthService;
 import com.frameforward.course.business.CourseBusiness;
 import com.frameforward.course.converter.CourseConverter;
 import com.frameforward.course.model.dto.ContentVersion;
-import com.frameforward.course.model.dto.Course;
+import com.frameforward.course.model.dto.CourseDetail;
+import com.frameforward.course.model.dto.CourseSummary;
 import com.frameforward.course.model.dto.Feedback;
 import com.frameforward.course.model.dto.LessonContext;
 import com.frameforward.course.model.dto.Progress;
@@ -34,12 +35,12 @@ public class CourseService {
 
 	private final CourseConverter converter;
 
-	public List<Course> catalog(String token) {
+	public List<CourseSummary> catalog(String token) {
 		auth.requireAccountId(token);
 		return business.catalog();
 	}
 
-	public Course course(String token, String courseId) {
+	public CourseDetail course(String token, String courseId) {
 		auth.requireAccountId(token);
 		return business.course(courseId);
 	}

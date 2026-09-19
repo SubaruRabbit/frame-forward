@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.*;
 import com.frameforward.auth.service.AuthService;
 import com.frameforward.course.business.CourseNotFound;
 import com.frameforward.course.model.dto.Assignment;
-import com.frameforward.course.model.dto.Course;
+import com.frameforward.course.model.dto.CourseDetail;
+import com.frameforward.course.model.dto.CourseSummary;
 import com.frameforward.course.model.dto.Feedback;
 import com.frameforward.course.model.dto.Progress;
 import com.frameforward.course.service.CourseService;
@@ -21,12 +22,13 @@ public class CourseController {
 	private final CourseService courses;
 
 	@GetMapping
-	public List<Course> catalog(@RequestHeader(name = "Authorization", required = false) String authorization) {
+	public List<CourseSummary> catalog(@RequestHeader(name = "Authorization", required = false) String authorization) {
 		return courses.catalog(AuthService.bearer(authorization));
 	}
 
 	@GetMapping("/{courseId}")
-	public ResponseEntity<Course> course(@RequestHeader(name = "Authorization", required = false) String authorization,
+	public ResponseEntity<CourseDetail> course(
+			@RequestHeader(name = "Authorization", required = false) String authorization,
 			@PathVariable String courseId) {
 
 		try {

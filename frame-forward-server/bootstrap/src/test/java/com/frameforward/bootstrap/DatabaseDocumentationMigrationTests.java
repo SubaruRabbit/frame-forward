@@ -67,9 +67,24 @@ class DatabaseDocumentationMigrationTests {
 		assertDocumentation(Map.of("course_content_versions",
 				List.of("id", "course_id", "content_version", "model_id", "prompt_version", "source_material_version",
 						"created_at"),
-				"lesson_progress", List.of("account_id", "content_version_id", "lesson_id", "completed_at"),
+				"lesson_progress", List.of("id", "account_id", "content_version_id", "lesson_id", "completed_at"),
 				"lesson_assignment_feedback", List.of("id", "account_id", "content_version_id", "lesson_id", "media_id",
 						"feedback_task_id", "lesson_objective", "created_at")));
+	}
+
+	@Test
+	void everyBusinessTableHasAPrimaryKey() throws Exception {
+
+		try (var connection = DriverManager.getConnection(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword());
+				var statement = connection.createStatement();
+				var result = statement.executeQuery("SELECT tables.TABLE_NAME FROM information_schema.TABLES tables "
+						+ "LEFT JOIN information_schema.TABLE_CONSTRAINTS constraints ON constraints.CONSTRAINT_SCHEMA = tables.TABLE_SCHEMA "
+						+ "AND constraints.TABLE_NAME = tables.TABLE_NAME AND constraints.CONSTRAINT_TYPE = 'PRIMARY KEY' "
+						+ "WHERE tables.TABLE_SCHEMA = DATABASE() AND tables.TABLE_TYPE = 'BASE TABLE' "
+						+ "AND tables.TABLE_NAME <> 'flyway_schema_history' GROUP BY tables.TABLE_NAME "
+						+ "HAVING COUNT(constraints.CONSTRAINT_NAME) = 0")) {
+			assertThat(result.next()).isFalse();
+		}
 	}
 
 	@Test

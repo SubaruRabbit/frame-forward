@@ -22,7 +22,8 @@ class CourseRepositoryTest {
 				LessonProgressEntity.class);
 		var versions = mock(CourseContentVersionMapper.class);
 		var progress = mock(LessonProgressMapper.class);
-		var repository = new CourseRepository(versions, progress, mock(AssignmentFeedbackMapper.class));
+		var repository = new CourseRepository(versions, progress, mock(AssignmentFeedbackMapper.class),
+				mock(CourseDefinitionMapper.class), mock(CourseChapterMapper.class), mock(CourseLessonMapper.class));
 		when(versions.selectOne(any())).thenAnswer(call -> {
 			LambdaQueryWrapper<?> query = call.getArgument(0);
 			assertThat(query.getSqlSegment()).contains("course_id", "content_version");
@@ -45,6 +46,32 @@ class CourseRepositoryTest {
 			return 0L;
 		}).when(progress).selectCount(any());
 		assertThat(repository.countLessonProgress("account", "version", "lesson")).isZero();
+	}
+
+	@Test
+	void queriesStructuredCourseDefinitionsChaptersAndLessons() {
+		TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "definitions"),
+				CourseDefinitionEntity.class);
+		TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "chapters"),
+				CourseChapterEntity.class);
+		TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "lessons"),
+				CourseLessonEntity.class);
+		var definitions = mock(CourseDefinitionMapper.class);
+		var chapters = mock(CourseChapterMapper.class);
+		var lessons = mock(CourseLessonMapper.class);
+		var repository = new CourseRepository(mock(CourseContentVersionMapper.class), mock(LessonProgressMapper.class),
+				mock(AssignmentFeedbackMapper.class), definitions, chapters, lessons);
+
+		repository.listDefinitions();
+		repository.findDefinition("course");
+		repository.findLatestVersion("course");
+		repository.listChapters("version");
+		repository.listLessons("chapter");
+
+		verify(definitions).selectList(any());
+		verify(definitions).selectById("course");
+		verify(chapters).selectList(any());
+		verify(lessons).selectList(any());
 	}
 
 }

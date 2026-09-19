@@ -3,6 +3,7 @@ package com.frameforward.course.service;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -15,8 +16,9 @@ import com.frameforward.ai.model.dto.AiTaskState;
 import com.frameforward.ai.service.AiTaskRuntime;
 import com.frameforward.auth.service.AuthService;
 import com.frameforward.course.business.CourseBusiness;
-import com.frameforward.course.component.CourseCatalog;
 import com.frameforward.course.converter.CourseConverter;
+import com.frameforward.course.model.dto.CourseDetail;
+import com.frameforward.course.model.dto.CourseSummary;
 import com.frameforward.course.model.dto.LessonContext;
 import com.frameforward.course.model.dto.ProgressSnapshot;
 import com.frameforward.course.model.entity.CourseContentVersionEntity;
@@ -37,13 +39,14 @@ class CourseServiceTest {
 
 	@Test
 	void authenticatesCatalogCourseAndProgress() {
-		var catalog = CourseCatalog.p0();
+		var catalog = List.of(new CourseSummary("course", "课程", "BASICS", "v1", 1));
+		var detail = new CourseDetail("course", "课程", "BASICS", "v1", List.of());
 		when(auth.requireAccountId("token")).thenReturn("account");
 		when(business.catalog()).thenReturn(catalog);
-		when(business.course("course")).thenReturn(catalog.getFirst());
+		when(business.course("course")).thenReturn(detail);
 		when(business.progress("account", "course")).thenReturn(new ProgressSnapshot("course", "v1", 1, 4));
 		assertThat(service.catalog("token")).isSameAs(catalog);
-		assertThat(service.course("token", "course")).isSameAs(catalog.getFirst());
+		assertThat(service.course("token", "course")).isSameAs(detail);
 		assertThat(service.progress("token", "course").completedLessons()).isEqualTo(1);
 		verify(auth, times(3)).requireAccountId("token");
 	}

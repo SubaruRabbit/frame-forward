@@ -1,5 +1,6 @@
-import type { Course } from '../courseCache';
+import type { CourseDetail, CourseSummary } from '../course';
 
 export interface LearningPort {
-  loadCourses(): Promise<Course[]>;
+  listCourses(): Promise<CourseSummary[]>;
+  loadCourse(courseId: string): Promise<CourseDetail>;
 }

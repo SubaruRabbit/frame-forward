@@ -33,18 +33,22 @@ const dependencies: AppDependencies = {
   sessionCredentials: { clear: jest.fn(), load: async () => null, save: async () => undefined },
 };
 
-function shell(store: RouteStore, session = authenticatedSession) {
+function shell(store: RouteStore, session = authenticatedSession, appDependencies = dependencies) {
   return (
     <SafeAreaProvider>
-      <AppShell dependencies={dependencies} routeStore={store} sessionValidator={session} />
+      <AppShell dependencies={appDependencies} routeStore={store} sessionValidator={session} />
     </SafeAreaProvider>
   );
 }
 
-async function renderShell(store: RouteStore, session = authenticatedSession) {
+async function renderShell(
+  store: RouteStore,
+  session = authenticatedSession,
+  appDependencies = dependencies,
+) {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
-    renderer = ReactTestRenderer.create(shell(store, session));
+    renderer = ReactTestRenderer.create(shell(store, session, appDependencies));
   });
   await ReactTestRenderer.act(async () => {
     await new Promise<void>(resolve => setImmediate(resolve));
@@ -62,6 +66,28 @@ test('navigation reaches every top-level placeholder', async () => {
     expect(renderer.root.findByProps({ testID: `${route}-screen` })).toBeTruthy();
   }
   expect(store.saved).toEqual(['home', 'learn', 'portfolio', 'profile']);
+});
+
+test('learning route loads the catalog through injected app network dependencies', async () => {
+  const network = {
+    request: jest
+      .fn()
+      .mockResolvedValue([
+        { id: 'p0', title: '摄影基础', category: 'BASICS', contentVersion: 'v1', lessonCount: 1 },
+      ]),
+  };
+  const renderer = await renderShell(
+    createRouteStore('learn'),
+    { hasValidSession: async () => true },
+    {
+      ...dependencies,
+      network,
+    },
+  );
+
+  expect(network.request).toHaveBeenCalledWith({ path: '/courses' });
+  expect(renderer.root.findByProps({ testID: 'course-p0' })).toBeTruthy();
+  expect(renderer.root.findByProps({ testID: 'learn-screen' })).toBeTruthy();
 });
 
 test('an invalid session opens the login route', async () => {

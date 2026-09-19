@@ -22,7 +22,11 @@ import { persistedSession, type SessionValidator } from './session';
 import { persistentRouteStore, type RouteStore } from './navigation/routeStore';
 import { createAppDependencies, type AppDependencies } from './composition';
 import { developmentEnvironment } from '@config/environment';
-import { LearningScreen, cachedLearningPort, createLearningUseCases } from '@features/learning';
+import {
+  LearningScreen,
+  createLearningUseCases,
+  createNetworkLearningPort,
+} from '@features/learning';
 import {
   PhotoImportScreen,
   createDevicePhotoImportPort,
@@ -127,7 +131,9 @@ export function AppShell({
             )}
           </>
         ) : route === 'learn' ? (
-          <LearningScreen useCases={createLearningUseCases(cachedLearningPort)} />
+          <LearningScreen
+            useCases={createLearningUseCases(createNetworkLearningPort(dependencies.network))}
+          />
         ) : route === 'profile' ? (
           <>
             <EquipmentScreen
