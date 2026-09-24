@@ -1,0 +1,1 @@
+export { LightJournalHome } from './LightJournalHome';

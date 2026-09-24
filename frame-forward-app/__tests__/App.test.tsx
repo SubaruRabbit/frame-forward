@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
+import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 jest.mock('react-native-keychain', () => ({
@@ -68,6 +69,35 @@ test('navigation reaches every top-level placeholder', async () => {
   expect(store.saved).toEqual(['home', 'learn', 'portfolio', 'profile']);
 });
 
+test('bottom navigation exposes labelled selected targets with touch-safe geometry', async () => {
+  const renderer = await renderShell(createRouteStore());
+  const home = renderer.root.findByProps({ testID: 'nav-home' });
+  expect(home.props.accessibilityLabel).toBe('切换到首页');
+  expect(home.props.accessibilityState).toEqual({ selected: true });
+  expect(StyleSheet.flatten(home.props.style({ pressed: false })).minHeight).toBeGreaterThanOrEqual(
+    44,
+  );
+
+  await ReactTestRenderer.act(async () => {
+    renderer.root.findByProps({ testID: 'nav-portfolio' }).props.onPress();
+  });
+  expect(renderer.root.findByProps({ testID: 'nav-portfolio' }).props.accessibilityState).toEqual({
+    selected: true,
+  });
+});
+
+test('home reproduces the Light Journal photography hierarchy and capture entry', async () => {
+  const renderer = await renderShell(createRouteStore());
+  expect(renderer.root.findByProps({ testID: 'light-journal-home' })).toBeTruthy();
+  expect(renderer.root.findByProps({ children: '记录今天的光' })).toBeTruthy();
+  expect(renderer.root.findByProps({ children: '今日摄影灵感' })).toBeTruthy();
+  expect(renderer.root.findByProps({ children: '快速学习' })).toBeTruthy();
+  expect(renderer.root.findByProps({ children: '最近评分' })).toBeTruthy();
+  expect(renderer.root.findByProps({ testID: 'start-capture' }).props.accessibilityLabel).toBe(
+    '开始拍摄，进入导入照片流程',
+  );
+});
+
 test('learning route loads the catalog through injected app network dependencies', async () => {
   const network = {
     request: jest
@@ -113,6 +143,69 @@ test('restart restores a valid route and rejects an unknown saved route', async 
   expect(renderer.root.findByProps({ testID: 'portfolio-screen' })).toBeTruthy();
   (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce('unknown-route');
   expect(await persistentRouteStore.load()).toBe('home');
+});
+
+test('workflow completion is announced without leaving the current destination', async () => {
+  const work = {
+    availability: { evaluation: true, exif: true, retake: false, sourcePlan: false },
+    camera: 'Sony α6700',
+    favorite: false,
+    height: 1080,
+    lens: 'E 35mm',
+    mediaId: 'work-1',
+    subject: '人像',
+    width: 1920,
+    workflowContext: {
+      comparisonCandidates: [],
+      evaluation: { evaluationId: 'evaluation-1', sessionId: null },
+      mediaId: 'work-1',
+      session: null,
+      sourcePlan: null,
+    },
+  };
+  const request: AppDependencies['network']['request'] = async <T,>({
+    path,
+  }: Parameters<AppDependencies['network']['request']>[0]) => {
+    if (path === '/portfolio/works') return { items: [work], nextCursor: null } as T;
+    if (path === '/portfolio/works/work-1') return work as T;
+    if (path === '/photo-evaluations') {
+      return {
+        result: {
+          dimensions: {},
+          primaryProblems: [],
+          priorityImprovement: '保持构图重点',
+          retakeSteps: [],
+          strengths: [],
+          technicalDiagnosis: { certainty: 'OBSERVATION', text: '曝光稳定' },
+          total: 86,
+        },
+        state: 'SUCCEEDED',
+        taskId: 'task-1',
+      } as T;
+    }
+    throw new Error(`Unexpected request: ${path}`);
+  };
+  const network: AppDependencies['network'] = { request };
+  const renderer = await renderShell(createRouteStore('portfolio'), authenticatedSession, {
+    ...dependencies,
+    network,
+  });
+  await ReactTestRenderer.act(async () => {
+    renderer.root.findByProps({ testID: 'portfolio-work-work-1' }).props.onPress();
+    await new Promise<void>(resolve => setImmediate(resolve));
+  });
+  await ReactTestRenderer.act(async () => {
+    renderer.root.findByProps({ testID: 'portfolio-reanalyze' }).props.onPress();
+    await new Promise<void>(resolve => setImmediate(resolve));
+  });
+
+  const notice = renderer.root.findByProps({ testID: 'workflow-notice' });
+  expect(notice.props).toMatchObject({
+    accessibilityLiveRegion: 'polite',
+    accessibilityRole: 'alert',
+  });
+  expect(renderer.root.findByProps({ children: '照片重新分析完成。' })).toBeTruthy();
+  expect(renderer.root.findByProps({ testID: 'portfolio-screen' })).toBeTruthy();
 });
 
 test('common state components only expose retry when supplied', async () => {

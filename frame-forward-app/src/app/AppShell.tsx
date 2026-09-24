@@ -14,8 +14,16 @@ import {
   createPortfolioUseCases,
   createNetworkPortfolioPort,
 } from '@features/portfolio';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { defaultRoute, type TopLevelRoute } from '@contracts/navigation';
 import { persistedSession, type SessionValidator } from './session';
@@ -39,12 +47,14 @@ import {
   createNetworkEquipmentPort,
 } from '@features/equipment';
 import { createWorkflowUseCases } from './workflowComposition';
+import { colors, elevation, radii, spacing } from '@theme/tokens';
+import { LightJournalHome } from '@features/light-journal-home';
 
 const destinations: Array<{ key: TopLevelRoute; label: string; kicker: string }> = [
   { key: 'home', label: '首页', kicker: '准备好拍下一张了吗？' },
-  { key: 'learn', label: '学习', kicker: '把相机知识用到真实场景。' },
-  { key: 'portfolio', label: '作品', kicker: '记录每一次更好的尝试。' },
-  { key: 'profile', label: '我的', kicker: '你的器材、进度与设置。' },
+  { key: 'learn', label: '教程', kicker: '把相机知识用到真实场景。' },
+  { key: 'portfolio', label: '图库', kicker: '记录每一次更好的尝试。' },
+  { key: 'profile', label: '评分', kicker: '你的器材、进度与设置。' },
 ];
 export type AppShellProps = {
   dependencies?: AppDependencies;
@@ -62,6 +72,8 @@ export function AppShell({
   const [route, setRoute] = useState<TopLevelRoute>(defaultRoute);
   const [sceneAnalysisId, setSceneAnalysisId] = useState<string | null>(null);
   const [workflowNotice, setWorkflowNotice] = useState<string | null>(null);
+  const scrollView = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const [captureSectionY, setCaptureSectionY] = useState(0);
   const workflows = createWorkflowUseCases(dependencies.network);
   useEffect(() => {
     let active = true;
@@ -86,8 +98,16 @@ export function AppShell({
   };
   if (!ready)
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#18A999" size="large" />
+      <View
+        accessibilityRole="progressbar"
+        accessibilityLabel="正在准备摄影工作台"
+        style={styles.center}
+        testID="app-shell-loading"
+      >
+        <ActivityIndicator color={colors.accent} size="large" />
+        <Text allowFontScaling style={styles.loadingText}>
+          正在准备摄影工作台
+        </Text>
       </View>
     );
   if (!authenticated)
@@ -102,85 +122,134 @@ export function AppShell({
     );
   const destination = destinations.find(item => item.key === route)!;
   return (
-    <View style={[styles.app, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[styles.app, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" />
-      <View style={styles.content} testID={`${route}-screen`}>
-        <Text style={styles.eyebrow}>FRAME FORWARD</Text>
-        <Text style={styles.heading}>{destination.label}</Text>
-        <Text style={styles.kicker}>{destination.kicker}</Text>
+      <ScrollView
+        ref={scrollView}
+        contentContainerStyle={styles.content}
+        contentInsetAdjustmentBehavior="never"
+        testID={`${route}-screen`}
+      >
         {route === 'home' ? (
           <>
-            <PhotoImportScreen
-              useCases={createPhotoImportUseCases(
-                createDevicePhotoImportPort(dependencies.network),
-              )}
+            <LightJournalHome
+              onStartCapture={() =>
+                scrollView.current?.scrollTo({ animated: true, y: captureSectionY })
+              }
             />
-            <SceneAnalysisScreen
-              useCases={createSceneAnalysisUseCases(
-                createNetworkSceneAnalysisPort(dependencies.network),
-              )}
-              onCompleted={result => setSceneAnalysisId(result.sceneAnalysisId)}
-            />
-            {sceneAnalysisId && (
-              <ShootingPlanScreen
-                sceneAnalysisId={sceneAnalysisId}
-                useCases={createShootingPlanUseCases(
-                  createNetworkShootingPlanPort(dependencies.network),
+            <View
+              onLayout={event => setCaptureSectionY(event.nativeEvent.layout.y)}
+              style={styles.captureWorkflow}
+            >
+              <PhotoImportScreen
+                useCases={createPhotoImportUseCases(
+                  createDevicePhotoImportPort(dependencies.network),
                 )}
               />
-            )}
+              <SceneAnalysisScreen
+                useCases={createSceneAnalysisUseCases(
+                  createNetworkSceneAnalysisPort(dependencies.network),
+                )}
+                onCompleted={result => setSceneAnalysisId(result.sceneAnalysisId)}
+              />
+              {sceneAnalysisId && (
+                <ShootingPlanScreen
+                  sceneAnalysisId={sceneAnalysisId}
+                  useCases={createShootingPlanUseCases(
+                    createNetworkShootingPlanPort(dependencies.network),
+                  )}
+                />
+              )}
+            </View>
           </>
         ) : route === 'learn' ? (
-          <LearningScreen
-            useCases={createLearningUseCases(createNetworkLearningPort(dependencies.network))}
-          />
+          <>
+            <RouteHeader destination={destination} />
+            <LearningScreen
+              useCases={createLearningUseCases(createNetworkLearningPort(dependencies.network))}
+            />
+          </>
         ) : route === 'profile' ? (
           <>
+            <RouteHeader destination={destination} />
             <EquipmentScreen
               useCases={createEquipmentUseCases(createNetworkEquipmentPort(dependencies.network))}
             />
             <AccountDeletionPanel onConfirm={logout} />
           </>
         ) : (
-          <PortfolioScreen
-            useCases={createPortfolioUseCases(createNetworkPortfolioPort(dependencies.network))}
-            onReanalyze={({ mediaId, sessionId }) =>
-              workflows.photoReview
-                .reanalyze(mediaId, sessionId)
-                .then(() => setWorkflowNotice('照片重新分析完成。'))
-                .catch(() => setWorkflowNotice('照片重新分析失败，请重试。'))
-            }
-            onCreateSession={({ shootingPlanId, planContext }) =>
-              workflows.shootingSession
-                .createSession(shootingPlanId, planContext)
-                .then(() => setWorkflowNotice('拍摄任务已创建。'))
-                .catch(() => setWorkflowNotice('拍摄任务创建失败，请重试。'))
-            }
-            onCompare={({ retakeEvaluationId }) =>
-              workflows.shootingSession
-                .getComparison(retakeEvaluationId)
-                .then(() => setWorkflowNotice('重拍对比已加载。'))
-                .catch(() => setWorkflowNotice('重拍对比读取失败，请重试。'))
-            }
-          />
-        )}{' '}
-        {workflowNotice ? <Text testID="workflow-notice">{workflowNotice}</Text> : null}
+          <>
+            <RouteHeader destination={destination} />
+            <PortfolioScreen
+              useCases={createPortfolioUseCases(createNetworkPortfolioPort(dependencies.network))}
+              onReanalyze={({ mediaId, sessionId }) =>
+                workflows.photoReview
+                  .reanalyze(mediaId, sessionId)
+                  .then(() => setWorkflowNotice('照片重新分析完成。'))
+                  .catch(() => setWorkflowNotice('照片重新分析失败，请重试。'))
+              }
+              onCreateSession={({ shootingPlanId, planContext }) =>
+                workflows.shootingSession
+                  .createSession(shootingPlanId, planContext)
+                  .then(() => setWorkflowNotice('拍摄任务已创建。'))
+                  .catch(() => setWorkflowNotice('拍摄任务创建失败，请重试。'))
+              }
+              onCompare={({ retakeEvaluationId }) =>
+                workflows.shootingSession
+                  .getComparison(retakeEvaluationId)
+                  .then(() => setWorkflowNotice('重拍对比已加载。'))
+                  .catch(() => setWorkflowNotice('重拍对比读取失败，请重试。'))
+              }
+            />
+          </>
+        )}
+        {workflowNotice ? (
+          <View
+            accessibilityLiveRegion="polite"
+            accessibilityRole="alert"
+            style={styles.notice}
+            testID="workflow-notice"
+          >
+            <Text allowFontScaling style={styles.noticeLabel}>
+              拍摄进度
+            </Text>
+            <Text allowFontScaling style={styles.noticeText}>
+              {workflowNotice}
+            </Text>
+          </View>
+        ) : null}
         {route === 'profile' && (
-          <Pressable accessibilityRole="button" onPress={logout} testID="logout-button">
-            <Text>退出登录</Text>
+          <Pressable
+            accessibilityLabel="退出登录"
+            accessibilityRole="button"
+            onPress={logout}
+            style={styles.logout}
+            testID="logout-button"
+          >
+            <Text allowFontScaling style={styles.logoutText}>
+              退出登录
+            </Text>
           </Pressable>
         )}
-      </View>
-      <View accessibilityRole="tablist" style={styles.tabs}>
+      </ScrollView>
+      <View
+        accessibilityRole="tablist"
+        style={[styles.tabs, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}
+      >
         {destinations.map(item => {
           const selected = item.key === route;
           return (
             <Pressable
               accessibilityRole="tab"
+              accessibilityLabel={`切换到${item.label}`}
               accessibilityState={{ selected }}
               key={item.key}
               onPress={() => selectRoute(item.key)}
-              style={[styles.tab, selected && styles.selectedTab]}
+              style={({ pressed }) => [
+                styles.tab,
+                selected && styles.selectedTab,
+                pressed && styles.pressedTab,
+              ]}
               testID={`nav-${item.key}`}
             >
               <Text style={[styles.tabLabel, selected && styles.selectedTabLabel]}>
@@ -193,33 +262,74 @@ export function AppShell({
     </View>
   );
 }
+
+function RouteHeader({ destination }: { destination: (typeof destinations)[number] }) {
+  return (
+    <View style={styles.header}>
+      <Text allowFontScaling style={styles.eyebrow}>
+        LIGHT JOURNAL
+      </Text>
+      <Text allowFontScaling style={styles.heading}>
+        {destination.label}
+      </Text>
+      <Text allowFontScaling style={styles.kicker}>
+        {destination.kicker}
+      </Text>
+    </View>
+  );
+}
 const styles = StyleSheet.create({
-  app: { backgroundColor: '#F5F9F8', flex: 1 },
-  center: { alignItems: 'center', backgroundColor: '#F5F9F8', flex: 1, justifyContent: 'center' },
-  content: { flex: 1, justifyContent: 'center', padding: 28 },
-  eyebrow: { color: '#18A999', fontSize: 12, fontWeight: '800', letterSpacing: 2 },
-  heading: { color: '#102A43', fontSize: 36, fontWeight: '800', marginTop: 12 },
-  kicker: { color: '#52616B', fontSize: 17, lineHeight: 26, marginTop: 8 },
-  focusFrame: {
+  app: { backgroundColor: colors.canvas, flex: 1 },
+  center: {
     alignItems: 'center',
-    borderColor: '#18A999',
-    borderRadius: 18,
-    borderWidth: 2,
+    backgroundColor: colors.canvas,
+    flex: 1,
+    gap: spacing.md,
     justifyContent: 'center',
-    marginTop: 34,
-    minHeight: 160,
+    padding: spacing.xl,
   },
-  focusText: { color: '#102A43', fontSize: 16, fontWeight: '600' },
+  loadingText: { color: colors.mutedText, fontSize: 15, fontWeight: '600' },
+  content: { padding: spacing.xl, paddingBottom: spacing.xxxl },
+  captureWorkflow: { marginTop: spacing.xl },
+  header: { marginBottom: spacing.md },
+  eyebrow: { color: colors.accentPressed, fontSize: 12, fontWeight: '800', letterSpacing: 1.8 },
+  heading: { color: colors.text, fontSize: 34, fontWeight: '800', marginTop: spacing.md },
+  kicker: { color: colors.mutedText, fontSize: 16, lineHeight: 24, marginTop: spacing.sm },
+  notice: {
+    backgroundColor: colors.accentSoft,
+    borderRadius: radii.md,
+    gap: spacing.xs,
+    marginTop: spacing.xl,
+    padding: spacing.lg,
+  },
+  noticeLabel: { color: colors.accentPressed, fontSize: 12, fontWeight: '800', letterSpacing: 0.7 },
+  noticeText: { color: colors.text, fontSize: 15, lineHeight: 22 },
+  logout: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    justifyContent: 'center',
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.md,
+  },
+  logoutText: { color: colors.danger, fontWeight: '800' },
   tabs: {
-    backgroundColor: '#FFFFFF',
-    borderTopColor: '#D9E5E2',
+    backgroundColor: colors.surface,
+    borderTopColor: colors.divider,
     borderTopWidth: StyleSheet.hairlineWidth,
+    elevation: elevation.navigation,
     flexDirection: 'row',
     paddingHorizontal: 8,
     paddingTop: 8,
   },
-  tab: { alignItems: 'center', flex: 1, minHeight: 48, justifyContent: 'center' },
-  selectedTab: { borderTopColor: '#18A999', borderTopWidth: 3 },
-  tabLabel: { color: '#718096', fontSize: 13, fontWeight: '600' },
-  selectedTabLabel: { color: '#102A43', fontWeight: '800' },
+  tab: {
+    alignItems: 'center',
+    borderRadius: radii.sm,
+    flex: 1,
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  selectedTab: { backgroundColor: colors.accentSoft },
+  pressedTab: { backgroundColor: colors.surfaceSubtle },
+  tabLabel: { color: colors.muted, fontSize: 13, fontWeight: '600' },
+  selectedTabLabel: { color: colors.accentPressed, fontWeight: '800' },
 });

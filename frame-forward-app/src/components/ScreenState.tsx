@@ -1,12 +1,17 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { commonMessages } from '@i18n';
-import { colors, spacing } from '@theme/tokens';
+import { colors, radii, spacing } from '@theme/tokens';
 
 type StateKind = 'loading' | 'empty' | 'denied' | 'failure';
 type ScreenStateProps = { kind: StateKind; title: string; message?: string; onRetry?: () => void };
-const icons: Record<StateKind, string> = { loading: '◌', empty: '□', denied: '⊘', failure: '!' };
+const stateLabels: Record<StateKind, string> = {
+  loading: '正在加载',
+  empty: '暂无内容',
+  denied: '无权访问',
+  failure: '需要处理',
+};
 
 export function ScreenState({ kind, title, message, onRetry }: ScreenStateProps) {
   const announcement = message ? `${title}：${message}` : title;
@@ -19,9 +24,10 @@ export function ScreenState({ kind, title, message, onRetry }: ScreenStateProps)
       style={styles.container}
       testID={`${kind}-state`}
     >
-      <Text accessible={false} style={styles.icon}>
-        {icons[kind]}
-      </Text>
+      {kind === 'loading' ? (
+        <ActivityIndicator accessibilityLabel={stateLabels[kind]} color={colors.accent} />
+      ) : null}
+      {kind !== 'loading' ? <Text style={styles.status}>{stateLabels[kind]}</Text> : null}
       <Text allowFontScaling style={styles.title}>
         {title}
       </Text>
@@ -66,15 +72,16 @@ const styles = StyleSheet.create({
     padding: spacing.xxl,
     gap: spacing.sm,
   },
-  icon: { color: colors.accent, fontSize: 32, fontWeight: '700' },
+  status: { color: colors.accentPressed, fontSize: 13, fontWeight: '800', letterSpacing: 0.8 },
   title: { color: colors.text, fontSize: 18, fontWeight: '700' },
   message: { color: colors.mutedText, fontSize: 14, textAlign: 'center' },
   retry: {
-    backgroundColor: colors.text,
-    borderRadius: 8,
+    backgroundColor: colors.accent,
+    borderRadius: radii.sm,
     marginTop: spacing.sm,
+    minHeight: 44,
     paddingHorizontal: 18,
-    paddingVertical: 10,
+    justifyContent: 'center',
   },
   retryText: { color: colors.onAccent, fontWeight: '700' },
 });
